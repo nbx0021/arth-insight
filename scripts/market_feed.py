@@ -1,19 +1,47 @@
 import os
 import sys
+import django
 import pandas as pd
 import pandas_market_calendars as mcal
 from datetime import datetime, time
 import pytz
+import requests
+from io import StringIO
 
-# --- SETUP DJANGO ENVIRONMENT ---
-# This allows us to use your existing 'views.py' logic without running the server
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'arth_insight.settings') 
-import django
+# --- 1. DEFINE PATHS (The Fix) ---
+# Current Script: .../arth-insight/scripts/market_feed.py
+current_script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Project Root: .../arth-insight (This allows "from src.utils import...")
+project_root = os.path.dirname(current_script_dir)
+
+# Django Root: .../arth-insight/src/portal (This is where 'config' and 'dashboard' live)
+# ERROR WAS HERE: You had 'src', it needs to be 'src/portal'
+django_root = os.path.join(project_root, 'src', 'portal')
+
+# --- 2. ADD PATHS TO SYSTEM ---
+# We add BOTH so Python can find 'dashboard' AND 'src.utils'
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+if django_root not in sys.path:
+    sys.path.append(django_root)
+
+# --- 3. SETUP DJANGO ---
+# Now Python can find 'config' inside 'src/portal'
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings') 
 django.setup()
 
-# Now we can import your core logic!
-from dashboard.views import sync_stock_on_demand
+# --- 4. IMPORT VIEWS ---
+try:
+    # Now we import directly from 'dashboard' because we are "standing" inside 'portal'
+    from dashboard.views import sync_stock_on_demand
+    print("✅ Successfully imported dashboard logic!")
+except ImportError as e:
+    print(f"❌ CRITICAL IMPORT ERROR: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 
 def is_market_open():
     """
@@ -46,23 +74,43 @@ def is_market_open():
         
     return True
 
+
+
 def get_nifty50_tickers():
-    """Fetches Dynamic Nifty 50 List from NSE Website."""
+    """Fetches Dynamic Nifty 50 List from NSE Website with Anti-Blocking."""
     print("📋 Fetching Nifty 50 list from NSE...")
+    
+    fallback_tickers = [
+        "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "ITC", 
+        "SBIN", "BHARTIARTL", "LTIM", "AXISBANK", "KOTAKBANK",
+        "LT", "HINDUNILVR", "TATAMOTORS", "M&M", "MARUTI",
+        "TITAN", "SUNPHARMA", "BAJFINANCE", "ASIANPAINT"
+    ]
+
     try:
         url = "https://nsearchives.nseindia.com/content/indices/ind_nifty50list.csv"
-        df = pd.read_csv(url)
+        
+        # 1. TRICK NSE: Pretend to be a Chrome Browser
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        # 2. FETCH WITH TIMEOUT: Don't wait more than 10 seconds
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status() # Check for 404/500 errors
+        
+        # 3. CONVERT TO DATAFRAME
+        csv_data = StringIO(response.text)
+        df = pd.read_csv(csv_data)
+        
         tickers = df['Symbol'].tolist()
+        print(f"✅ Successfully fetched {len(tickers)} tickers from NSE.")
         return tickers
+
     except Exception as e:
-        print(f"⚠️ Failed to fetch live list ({e}). Using Fallback.")
-        # Fallback to Top 20 Heavyweights if NSE site is slow/blocking
-        return [
-            "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "ITC", 
-            "SBIN", "BHARTIARTL", "LTIM", "AXISBANK", "KOTAKBANK",
-            "LT", "HINDUNILVR", "TATAMOTORS", "M&M", "MARUTI",
-            "TITAN", "SUNPHARMA", "BAJFINANCE", "ASIANPAINT"
-        ]
+        print(f"⚠️ NSE Fetch Failed or Timed Out ({e}).")
+        print("🔄 Switching to Fallback List (Top 20 Heavyweights).")
+        return fallback_tickers
 
 def run_etl():
     print("🚀 Starting Market Data ETL...")

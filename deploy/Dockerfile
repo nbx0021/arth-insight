@@ -33,6 +33,9 @@ RUN python src/portal/manage.py collectstatic --noinput --clear
 # 8. Expose the Port (Google Cloud expects 8080)
 EXPOSE 8080
 
+# Collect static files
+RUN python src/portal/manage.py collectstatic --noinput
+
 # 9. Start the Server (The "EntryPoint")
 # --chdir src/portal: Tells Gunicorn to look inside the portal folder
 # config.wsgi:application: Points to the WSGI file

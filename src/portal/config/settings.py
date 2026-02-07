@@ -69,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -111,11 +112,15 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# This is where Django looks for your CSS/JS files
+
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# --- THE SMART SWITCH ---
+# Only use WhiteNoise compression when NOT in Debug mode (i.e., only on Render)
+if not DEBUG:
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # CACHING CONFIGURATION (RAM Cache)
 CACHES = {
@@ -125,7 +130,6 @@ CACHES = {
     }
 }
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 ALLOWED_HOSTS = ['*']
 
 # Add this line so the app knows which dataset to use!

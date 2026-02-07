@@ -1,0 +1,42 @@
+name: Market Data ETL
+
+on:
+  schedule:
+    # Runs every hour from 03:30 UTC to 10:30 UTC (9:00 AM - 4:00 PM IST)
+    # Monday (1) to Friday (5)
+    - cron: '30 3-10 * * 1-5'
+  
+  # Allows you to click "Run Now" manually from GitHub UI for testing
+  workflow_dispatch:
+
+jobs:
+  update-market-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+        python -m textblob.download_corpora
+
+    - name: Create Service Account File
+      # We create the JSON file from a GitHub Secret (Secure!)
+      run: echo '${{ secrets.GCP_SERVICE_JSON }}' > service-account.json
+
+    - name: Run ETL Script
+      env:
+        GCP_DATASET_ID: ${{ secrets.GCP_DATASET_ID }}
+        GOOGLE_APPLICATION_CREDENTIALS: service-account.json
+        # Secret Key needed for Django to start (even if not used)
+        DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }} 
+      run: |
+        python scripts/market_feed.py

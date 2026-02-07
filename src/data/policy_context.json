@@ -1,0 +1,81 @@
+{
+  "repo_rate": "5.25%",
+  "policy_stance": "Neutral",
+  "dates": {
+    "budget": "01 Feb 2026",
+    "rbi": "06 Feb 2026",
+    "eco_survey": "29 Jan 2026"
+  },
+  "sectors": {
+    "TEXTILES": {
+      "budget": "Positive - Integrated Programme with National Fibre Scheme and 5 Mega Textile Parks. Export period extended for garment exporters.",
+      "rbi": "Neutral - No specific mention, but stable rates aid working capital intensive units.",
+      "eco_survey": "Pivoting towards Man-Made Fibres (MMF) and technical textiles. PM-MITRA parks to facilitate economies of scale."
+    },
+    "AGRICULTURE": {
+      "budget": "Very Positive - Launch of 'Bharat-VISTAAR' AI tool and programmes for Coconut/Cashew/Cocoa. Tax relief for cooperatives.",
+      "rbi": "Neutral - Monitoring inflation; rural demand expected to remain steady.",
+      "eco_survey": "Shifting from food security to nutritional security. Focus on diversifying towards pulses, oilseeds, and maize."
+    },
+    "RAILWAYS": {
+      "budget": "Strong Growth - 7 new High-Speed Rail corridors (Mumbai-Pune, Delhi-Varanasi) and new Freight Corridors (Dankuni-Surat).",
+      "rbi": "Neutral - Indirect benefit from infrastructure thrust.",
+      "eco_survey": "Transformation via record capex. Key priorities: Dedicated Freight Corridors and Economic Railway Corridors."
+    },
+    "DEFENCE": {
+      "budget": "Positive - Customs duty exemption on aircraft parts. Expenditure allocation set at ₹5.94 lakh crore.",
+      "rbi": "Neutral.",
+      "eco_survey": "Focus on strategic indigenisation (Tier I priorities). Growing capabilities in engines, drones, and AUVs."
+    },
+    "CHEMICALS": {
+      "budget": "Positive - Scheme for 3 dedicated Chemical Parks. Promotion of CCUS technologies.",
+      "rbi": "Neutral.",
+      "eco_survey": "Strong linkages with refining; industrial chemicals categorized as high-urgency for indigenisation."
+    },
+    "AUTO": {
+      "budget": "Positive - Duty exemption on Li-Ion cell capital goods. Rising EV registrations noted as key trend.",
+      "rbi": "Positive - Strong momentum in two-wheeler and tractor sales (double digit growth).",
+      "eco_survey": "Rapid transition to electric mobility via PLI and PM E-DRIVE. Positioning as global hub for small cars."
+    },
+    "BANKING": {
+      "budget": "Reformist - High Level Committee for Viksit Bharat setup. Restructuring of PFC/REC to improve efficiency.",
+      "rbi": "Neutral - Repo rate held at 5.25%. Banks permitted to lend to REITs. New guidelines to curb mis-selling.",
+      "eco_survey": "Healthy system with GNPA at multi-decade low (2.2%). Diversification of funding sources emphasized."
+    },
+    "INFRASTRUCTURE": {
+      "budget": "Bullish - Capex raised to ₹12.2 lakh crore. New Risk Guarantee Fund and CIE manufacturing scheme.",
+      "rbi": "Positive - Construction growth expected to remain firm.",
+      "eco_survey": "Shift to logistics efficiency via PM GatiShakti. Focus on crowding-in private investment via InvITs/REITs."
+    },
+    "IT": {
+      "budget": "Positive - Safe harbour margin fixed at 15.5%. India Semiconductor Mission 2.0 launched.",
+      "rbi": "Neutral - Framework for limiting customer liability in digital transactions announced.",
+      "eco_survey": "Evolving from support to core value creator. Expansion of Global Capability Centres (GCCs) into AI/Deep-tech."
+    },
+    "PHARMA": {
+      "budget": "Positive - 'Biopharma SHAKTI' launched with ₹10k cr outlay. Customs duty exemption on 17 cancer drugs.",
+      "rbi": "Neutral.",
+      "eco_survey": "Reducing import dependence on APIs/KSMs via PLI. Transitioning from generics to innovation-led discovery."
+    },
+    "FMCG": {
+      "budget": "Mixed - Duty rationalization on tobacco (Negative). Programmes for Cashew/Cocoa brands (Positive).",
+      "rbi": "Positive - Benign inflation expected to support consumption.",
+      "eco_survey": "Broad-based recovery with rural demand strengthening. Rising consumption of processed foods noted."
+    },
+    "POWER": {
+      "budget": "Positive - Duty exemption for Nuclear projects extended to 2035. ₹20k cr for Carbon Capture (CCUS).",
+      "rbi": "Neutral - Restructuring of power financing NBFCs noted.",
+      "eco_survey": "Massive transition to non-fossil fuel. SHANTI Act signals push for Small Modular Reactors."
+    },
+    "REALTY": {
+      "budget": "Indirect Positive - Infrastructure push supports peripheral development.",
+      "rbi": "Positive - Banks permitted to lend to REITs, freeing up funds for developers.",
+      "eco_survey": "Asset monetization via REITs emphasized to crowd-in private investment."
+    },
+    "NBFC": {
+      "budget": "Neutral - Focus on public sector NBFCs (PFC/REC).",
+      "rbi": "Positive - Regulatory ease for 'Type I NBFCs'. Collateral-free loan limit for MSEs doubled to ₹20 lakh.",
+      "eco_survey": "Large corporations increasingly relying on non-bank instruments."
+    }
+  }
+}

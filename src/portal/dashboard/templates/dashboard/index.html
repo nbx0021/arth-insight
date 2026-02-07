@@ -1,0 +1,586 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ symbol }} | Arth-Insight Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* Full Screen Overlay */
+        #loader-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Container for Logo + Spinner */
+        .spinner-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* The Logo itself */
+        .loader-logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: contain;
+            z-index: 2;
+        }
+
+        /* The Multi-color Rotating Circle */
+        .loader-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 5px solid transparent;
+            border-top-color: #10b981; /* Green */
+            border-right-color: #3b82f6; /* Blue */
+            border-bottom-color: #f59e0b; /* Orange */
+            border-left-color: #ef4444; /* Red */
+            animation: spin 1.5s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Text Styling */
+        .loader-text {
+            margin-top: 25px;
+            font-family: 'MV Boli', 'Comic Sans MS', cursive;
+            font-size: 0.9rem;
+            color: #64748b;
+            text-align: center;
+        }
+        
+        .loader-text strong {
+            display: block;
+            font-size: 1.2rem;
+            color: #0f172a;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    
+    <div id="loader-overlay" style="display: none;">
+        <div class="spinner-container">
+            <div class="loader-ring"></div>
+            <img src="{% static 'dashboard/images/logo.png' %}" class="loader-logo" alt="Loading...">
+        </div>
+        <div class="loader-text">
+            <strong>Analyzing Market Data...</strong>
+            Built by Narendra Bhandari
+        </div>
+    </div>
+
+    <div class="container-main">
+        {% if error_message %}
+        <div class="alert alert-danger text-center shadow-sm my-5 p-5">
+            <h3 class="fw-bold text-danger">⚠️ Ticker Error</h3>
+            <p class="fs-5">{{ error_message }}</p>
+            <a href="/" class="btn btn-outline-danger mt-3">Try Another Symbol</a>
+        </div>
+        {% else %}
+
+        <header class="header-container mb-4">
+            <div class="brand-section">
+                <img src="{% static 'dashboard/images/logo.png' %}" class="project-logo" alt="Logo">
+                <div class="brand-text">
+                    <h1 class="mb-0">{{ data.company_name|default:symbol }}</h1>
+                    <span class="badge bg-light text-dark">{{ data.sector|default:"Unknown Sector" }}</span>
+                    <small class="d-block text-white-50 mt-1">NSE: {{ symbol }} | Sync: {{ data.last_updated|date:"H:i" }} IST</small>
+                </div>
+            </div>
+            
+            <form class="d-flex gap-2" method="GET" id="searchForm">
+                <input type="text" name="q" value="{{ symbol }}" class="form-control" 
+                       placeholder="Search Indian Stocks (e.g. Reliance, Tata Motors, SBIN)..." required>
+                
+                <button type="submit" class="btn btn-light fw-bold">Analyze</button>
+            </form>
+            
+            <div class="mt-2 text-white-50 small">
+                <span class="badge bg-secondary border border-light">🇮🇳 NSE India Only</span>
+                <span class="ms-2">Supports Companies & Tickers</span>
+            </div>
+        </header>
+
+        {% if data.arth_score %}
+        <div class="card mb-4 shadow-sm border-0" style="background: linear-gradient(to right, #f8fafc, #fff);">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="text-uppercase text-muted fw-bold mb-1" style="font-size: 0.85rem; letter-spacing: 1px;">Arth-Insight Verdict</h5>
+                    <h1 class="display-5 fw-bold mb-0 {{ data.arth_score.color }}">{{ data.arth_score.verdict }}</h1>
+                </div>
+                <div class="text-end">
+                    <div class="d-inline-block position-relative">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; border: 6px solid {% if data.arth_score.score >= 60 %}#10b981{% elif data.arth_score.score < 40 %}#ef4444{% else %}#f59e0b{% endif %}; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #334155;">
+                            {{ data.arth_score.score }}
+                        </div>
+                    </div>
+                    <small class="d-block text-muted mt-1 fw-bold">/ 100</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="price-summary-card">
+            <div class="price-item"><span>Price</span><strong>₹{{ data.price }}</strong></div>
+            <div class="price-item"><span>High</span><strong class="text-success">₹{{ data.day_high|default:0 }}</strong></div>
+            <div class="price-item"><span>Low</span><strong class="text-danger">₹{{ data.day_low|default:0 }}</strong></div>
+            <div class="price-item"><span>52W High</span><strong>₹{{ data.52_high|default:0 }}</strong></div>
+            <div class="price-item"><span>52W Low</span><strong>₹{{ data.52_low|default:0 }}</strong></div>
+        </div>
+
+        <div class="finstar-grid">
+            <div class="finstar-card" style="border-top-color: {% if 'Stable' in narendra_rating.ownership.status or 'High' in narendra_rating.ownership.status %}#10b981{% else %}#ef4444{% endif %};">
+                <h4>Ownership</h4>
+                <div class="rating {{ narendra_rating.ownership.color }}">{{ narendra_rating.ownership.status }}</div>
+                <div class="metric-row"><span class="metric-val">{{ narendra_rating.ownership.metric }}</span><span class="metric-bench">vs {{ narendra_rating.ownership.benchmark }}</span></div>
+            </div>
+            <div class="finstar-card" style="border-top-color: {% if 'Fair' in narendra_rating.valuation.status %}#3b82f6{% elif 'Expensive' in narendra_rating.valuation.status %}#ef4444{% else %}#10b981{% endif %};">
+                <h4>Valuation</h4>
+                <div class="rating {{ narendra_rating.valuation.color }}">{{ narendra_rating.valuation.status }}</div>
+                <div class="metric-row"><span class="metric-val">{{ narendra_rating.valuation.metric }}</span><span class="metric-bench">vs {{ narendra_rating.valuation.benchmark }}</span></div>
+            </div>
+            <div class="finstar-card" style="border-top-color: {% if 'Excel' in narendra_rating.efficiency.status %}#10b981{% else %}#f59e0b{% endif %};">
+                <h4>Efficiency</h4>
+                <div class="rating {{ narendra_rating.efficiency.color }}">{{ narendra_rating.efficiency.status }}</div>
+                <div class="metric-row"><span class="metric-val">{{ narendra_rating.efficiency.metric }}</span><span class="metric-bench">vs {{ narendra_rating.efficiency.benchmark }}</span></div>
+            </div>
+            <div class="finstar-card" style="border-top-color: {% if 'Solid' in narendra_rating.financials.status or 'Debt Free' in narendra_rating.financials.status %}#10b981{% else %}#ef4444{% endif %};">
+                <h4>Financials</h4>
+                <div class="rating {{ narendra_rating.financials.color }}">{{ narendra_rating.financials.status }}</div>
+                <div class="metric-row"><span class="metric-val">{{ narendra_rating.financials.metric }}</span><span class="metric-bench">vs {{ narendra_rating.financials.benchmark }}</span></div>
+            </div>
+        </div>
+
+        <div class="essentials-container mb-4" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="section-title text-success mb-0">💰 Wealth Growth Analysis</h5>
+                <form class="d-flex gap-2">
+                    <input type="hidden" name="q" value="{{ symbol }}">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text fw-bold">₹</span>
+                        <input type="number" name="w_amt" value="{{ w_amt }}" class="form-control" style="width: 100px;">
+                    </div>
+                    <select name="w_year" class="form-select form-select-sm" style="width: auto;">
+                        {% for y in year_range %}
+                        <option value="{{ y }}" {% if y == w_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-success fw-bold">Calculate</button>
+                </form>
+            </div>
+            
+            {% if wealth_data %}
+            <div class="row mt-3 align-items-center">
+                <div class="col-md-4 border-end">
+                    <div class="p-2">
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Invested on {{ wealth_data.start_date }}</small>
+                        <h3 class="mb-0 text-muted">₹{{ wealth_data.invested }}</h3>
+                        <div class="text-start my-1 text-muted" style="font-size: 0.8rem;">⬇</div>
+                        <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Current Value</small>
+                        <h2 class="text-success fw-bold mb-0">₹{{ wealth_data.current_value }}</h2>
+                        <span class="badge bg-success mt-2">+{{ wealth_data.growth_pct }}% Growth</span>
+                        
+                        {% if wealth_data.is_adjusted %}
+                        <div class="mt-2 text-warning small fw-bold">
+                            ⚠️ Adjusted to IPO Year: {{ wealth_data.actual_start_year }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div style="height: 200px; width: 100%;"><canvas id="wealthChart"></canvas></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="essentials-container mb-4">
+            <h5 class="section-title">📰 Latest News & Market Updates</h5>
+            <div class="list-group list-group-flush">
+                {% if data.news %}
+                    {% for n in data.news %}
+                    <a href="{{ n.link }}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold text-dark">{{ n.title|default:"Market Update" }}</div>
+                            <small class="text-muted">{{ n.publisher|default:"News Source" }} • {{ n.date|default:"Recent" }}</small>
+                        </div>
+                        <span class="badge bg-light text-dark">Read</span>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center p-3">
+                        <p class="text-muted mb-2">No direct news feed available from API for {{ symbol }}.</p>
+                        <a href="https://www.google.com/finance/quote/{{ symbol }}:NSE" target="_blank" class="btn btn-sm btn-outline-primary">
+                            View on Google Finance ↗
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if data.policy %}
+        <div class="essentials-container mb-4" style="background: #fffbeb; border: 1px solid #fcd34d;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title text-warning mb-0" style="color: #b45309 !important;">
+                    🏛️ Macro & Policy Context ({{ data.policy.sector_name }})
+                </h5>
+                <span class="badge bg-warning text-dark">Repo Rate: {{ data.policy.repo_rate }}</span>
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded border shadow-sm h-100">
+                        <small class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">
+                            Union Budget {% if data.policy.dates.budget %}({{ data.policy.dates.budget }}){% endif %}
+                        </small>
+                        <p class="mb-0 mt-2 small fw-bold text-dark">{{ data.policy.insights.budget|default:"No specific mention." }}</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded border shadow-sm h-100">
+                        <small class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">
+                            RBI Policy {% if data.policy.dates.rbi %}({{ data.policy.dates.rbi }}){% endif %}
+                        </small>
+                        <p class="mb-0 mt-2 small fw-bold text-dark">{{ data.policy.insights.rbi|default:"No specific mention." }}</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-3 bg-white rounded border shadow-sm h-100">
+                        <small class="text-uppercase fw-bold text-muted" style="font-size: 0.7rem;">
+                            Eco Survey {% if data.policy.dates.eco_survey %}({{ data.policy.dates.eco_survey }}){% endif %}
+                        </small>
+                        <p class="mb-0 mt-2 small fw-bold text-dark">{{ data.policy.insights.eco_survey|default:"No specific mention." }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if data.technicals %}
+        <div class="essentials-container mb-4">
+            <h5 class="section-title">⚡ Technical Signals & Trend</h5>
+            <div class="row text-center g-3">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded h-100 bg-light">
+                        <small class="text-uppercase fw-bold text-muted">RSI (14-Day)</small>
+                        <h3 class="my-2 {{ data.technicals.rsi.color }}">{{ data.technicals.rsi.val }}</h3>
+                        <span class="badge bg-secondary">{{ data.technicals.rsi.status }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded h-100 bg-light">
+                        <small class="text-uppercase fw-bold text-muted">Price Trend</small>
+                        <h4 class="my-2 {{ data.technicals.trend.color }}">{{ data.technicals.trend.status }}</h4>
+                        <small class="text-muted">{{ data.technicals.trend.desc }}</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded h-100 bg-light">
+                        <small class="text-uppercase fw-bold text-muted">MACD Momentum</small>
+                        <h3 class="my-2 {{ data.technicals.macd.color }}">{{ data.technicals.macd.val }}</h3>
+                        <span class="badge bg-light text-dark border">{{ data.technicals.macd.status }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="essentials-container">
+            <h5 class="section-title">📋 Company Essentials</h5>
+            <div class="essentials-grid">
+                <div class="essential-item"><label>Market Cap</label><span class="val">{{ data.mcap }}</span><span class="unit">Cr</span></div>
+                <div class="essential-item"><label>Shares</label><span class="val">{{ data.shares_fmt }}</span></div>
+                <div class="essential-item"><label>Ent. Value</label><span class="val">{{ data.enterprise_value }}</span><span class="unit">Cr</span></div>
+                <div class="essential-item"><label>P/B Ratio</label><span class="val">{{ data.pb_ratio }}</span></div>
+                <div class="essential-item"><label>Div Yield</label><span class="val text-success">{{ data.div_yield }}%</span></div>
+                <div class="essential-item"><label>Cash</label><span class="val">{{ data.cash }}</span><span class="unit">Cr</span></div>
+                <div class="essential-item"><label>Debt</label><span class="val text-danger">{{ data.debt }}</span><span class="unit">Cr</span></div>
+                <div class="essential-item"><label>Promoter</label><span class="val">{{ data.promoter_holding }}%</span></div>
+                <div class="essential-item"><label>ROE</label><span class="val">{{ data.roe }}%</span></div>
+                <div class="essential-item"><label>Profit Gr.</label><span class="val {% if data.profit_growth > 0 %}text-success{% else %}text-danger{% endif %}">{{ data.profit_growth }}%</span></div>
+            </div>
+        </div>
+
+        <div class="essentials-container mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h5 class="section-title mb-1">PERFORMANCE vs {{ bench_stats.symbol }}</h5>
+                    <div class="d-flex gap-3 small text-muted">
+                        <span>Stock Return: <strong class="{% if bench_stats.stock_return_pct > 0 %}text-success{% else %}text-danger{% endif %}">{{ bench_stats.stock_return_pct }}%</strong></span>
+                        <span>{{ bench_stats.symbol }} Return: <strong>{{ bench_stats.return_pct }}%</strong></span>
+                        <span>CAGR (5Y): <strong class="text-success">{{ data.cagr_5y }}%</strong></span>
+                    </div>
+                </div>
+                <div class="btn-group" id="filterBtns">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateChart('1m', this)">1M</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateChart('6m', this)">6M</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="updateChart('1y', this)">1Y</button>
+                    <button class="btn btn-sm btn-outline-primary active" onclick="updateChart('all', this)">5Y</button>
+                </div>
+            </div>
+            <div style="height: 350px; width: 100%;"><canvas id="mainChart"></canvas></div>
+            <div style="height: 100px; width: 100%; margin-top: 10px;"><canvas id="volumeChart"></canvas></div>
+        </div>
+
+        <div class="essentials-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title mb-0">⚖️ Sector Peers & Market Share ({{ data.sector }})</h5>
+                <small class="text-muted" style="font-size: 0.75rem;">Key: <span class="text-success">▲ Expensive</span> | <span class="text-danger">▼ Cheap</span></small>
+            </div>
+            <div class="table-responsive">
+                <table class="peer-table">
+                    <thead><tr><th>Company</th><th>Price</th><th>M.Cap (Cr)</th><th>Share %</th><th>P/E</th><th>ROE</th><th>Status</th></tr></thead>
+                    <tbody>
+                        <tr class="current-stock-row"><td><strong class="text-success">{{ symbol }}</strong></td><td>{{ data.price }}</td><td>{{ data.mcap }}</td><td><span class="badge bg-success">{{ my_share }}%</span></td><td>{{ data.pe_ratio }}</td><td>{{ data.roe }}%</td><td>--</td></tr>
+                        {% for p in peers %}
+                        <tr><td>{{ p.ticker }}</td><td>{{ p.price }}</td><td>{{ p.mcap }}</td><td><span class="badge bg-light text-dark">{{ p.share }}%</span></td><td>{{ p.pe }}</td><td>{{ p.roe }}%</td><td>{% if p.pe > data.pe_ratio %}<span class="trend-up" title="Peer is more expensive">▲ Exp</span>{% else %}<span class="trend-down" title="Peer is cheaper">▼ Cheap</span>{% endif %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="essentials-container">
+            <h5 class="section-title">📊 Shareholding Pattern & Top Investors</h5>
+            <div class="row align-items-center">
+                <div class="col-md-4 border-end"><div style="height: 250px; position: relative;"><canvas id="sharePieChart"></canvas></div></div>
+                <div class="col-md-8">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" style="font-size: 0.85rem;">
+                            <thead class="table-light"><tr><th>Top Institutional Holder</th><th>Category</th><th class="text-end">Shares</th><th class="text-end">Value (Cr)</th><th class="text-end">Date</th></tr></thead>
+                            <tbody>
+                                {% for inv in shareholding.investors %}
+                                <tr>
+                                    <td class="fw-bold text-secondary">{{ inv.name }}</td>
+                                    <td>{% if 'FII' in inv.category %}<span class="badge bg-primary bg-opacity-75">FII / Foreign</span>{% elif 'DII' in inv.category %}<span class="badge bg-success bg-opacity-75">DII / Mutual</span>{% else %}<span class="badge bg-secondary">Institution</span>{% endif %}</td>
+                                    <td class="text-end">{{ inv.shares }}</td>
+                                    <td class="text-end">₹{{ inv.value }}</td>
+                                    <td class="text-end text-muted">{{ inv.date }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted">No detailed institutional data available.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if financials %}
+        <div class="essentials-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="section-title mb-0">📑 Financial Statements (₹ Crores)</h5>
+                <ul class="nav nav-pills nav-sm" id="finTabs" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pl">Income Statement</button></li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#bs">Balance Sheet</button></li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#cf">Cash Flow</button></li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#re">Retained Earnings</button></li>
+                </ul>
+            </div>
+            
+            <div class="tab-content" id="pills-tabContent">
+                <div class="tab-pane fade show active" id="pl">
+                    <table class="finance-table">
+                        <thead><tr><th>Account Title</th>{% for y in financials.years %}<th class="text-end">{{ y }}</th>{% endfor %}</tr></thead>
+                        <tbody>
+                            {% for row in financials.pl_rows %}
+                            <tr style="{{ row.style }}">
+                                <td>{{ row.label }}</td>
+                                {% for val in row.values %}
+                                <td class="text-end">{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="bs">
+                    <table class="finance-table">
+                        <thead><tr><th>Account Title</th>{% for y in financials.years %}<th class="text-end">{{ y }}</th>{% endfor %}</tr></thead>
+                        <tbody>
+                            {% for row in financials.bs_rows %}
+                            <tr style="{{ row.style }}">
+                                <td>{{ row.label }}</td>
+                                {% for val in row.values %}
+                                <td class="text-end">{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="cf">
+                    <table class="finance-table">
+                        <thead><tr><th>Account Title</th>{% for y in financials.years %}<th class="text-end">{{ y }}</th>{% endfor %}</tr></thead>
+                        <tbody>
+                            {% for row in financials.cf_rows %}
+                            <tr style="{{ row.style }}">
+                                <td>{{ row.label }}</td>
+                                {% for val in row.values %}
+                                <td class="text-end">{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="re">
+                    <table class="finance-table">
+                        <thead><tr><th>Account Title</th><th class="text-end">Amount</th></tr></thead>
+                        <tbody>
+                            {% for row in financials.re_rows %}
+                            <tr style="{{ row.style }}">
+                                <td>{{ row.label }}</td>
+                                <td class="text-end">{{ row.values.0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% endif %}
+        <footer>Built by Narendra Bhandari @ 2026</footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const loader = document.getElementById('loader-overlay');
+        const searchForm = document.getElementById('searchForm');
+
+        if(searchForm) {
+            searchForm.addEventListener('submit', function() {
+                if(loader) {
+                    loader.style.display = 'flex';
+                    loader.style.opacity = '1';
+                }
+            });
+        }
+
+        document.querySelectorAll('form:not(#searchForm)').forEach(f => {
+            f.addEventListener('submit', function() {
+                if(loader) {
+                    loader.style.display = 'flex';
+                    loader.style.opacity = '1';
+                }
+            });
+        });
+
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => { loader.style.display = 'none'; }, 500);
+                }
+            }, 600); 
+        });
+
+        {% if not error_message %}
+        
+        const rawDates = {{ chart_dates|safe }};
+        const stockData = {{ chart_stock_pct|safe }};
+        const benchData = {{ chart_bench_pct|safe }};
+        const volumeData = {{ chart_volumes|safe }};
+
+        {% if wealth_data %}
+        new Chart(document.getElementById('wealthChart'), {
+            type: 'line',
+            data: {
+                labels: {{ wealth_dates|safe }},
+                datasets: [{
+                    label: 'Portfolio Value (₹)',
+                    data: {{ wealth_series|safe }},
+                    borderColor: '#10b981', 
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true, 
+                    pointRadius: 0,
+                    borderWidth: 2
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+        });
+        {% endif %}
+
+        const ctxPrice = document.getElementById('mainChart').getContext('2d');
+        const priceChart = new Chart(ctxPrice, {
+            type: 'line',
+            data: {
+                labels: rawDates,
+                datasets: [
+                    { label: '{{ symbol }} (%)', data: stockData, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.05)', tension: 0.1 },
+                    { label: '{{ bench_stats.symbol }} (%)', data: benchData, borderColor: '#64748b', borderWidth: 2, pointRadius: 0, borderDash: [4, 4], fill: false, tension: 0.1 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', labels: { usePointStyle: true } } }, scales: { x: { display: false }, y: { position: 'right', grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '%' } } } }
+        });
+
+        const volumeChart = new Chart(document.getElementById('volumeChart'), {
+            type: 'bar',
+            data: { labels: rawDates, datasets: [{ label: 'Vol', data: volumeData, backgroundColor: '#3b82f6', borderRadius: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: true, ticks: { maxTicksLimit: 6 } }, y: { display: false } } }
+        });
+
+        {% if shareholding.pie_data %}
+        new Chart(document.getElementById('sharePieChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ pie_labels|safe }},
+                datasets: [{
+                    data: {{ pie_data|safe }},
+                    backgroundColor: ['#10b981', '#3b82f6', '#94a3b8'],
+                    borderWidth: 0
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '70%' }
+        });
+        {% endif %}
+
+        function updateChart(period, btn) {
+            document.querySelectorAll('#filterBtns .btn').forEach(b => { b.classList.remove('active', 'btn-outline-primary'); b.classList.add('btn-outline-secondary'); });
+            btn.classList.add('active', 'btn-outline-primary'); btn.classList.remove('btn-outline-secondary');
+            let limit = rawDates.length;
+            if (period === '7d') limit = 7; if (period === '1m') limit = 22; if (period === '6m') limit = 130; if (period === '1y') limit = 252;
+            const subDates = rawDates.slice(-limit); const subStock = stockData.slice(-limit); const subBench = benchData.slice(-limit); const subVol = volumeData.slice(-limit);
+            const startS = subStock[0]; const startB = subBench[0];
+            priceChart.data.labels = subDates;
+            priceChart.data.datasets[0].data = subStock.map(v => (v - startS).toFixed(2));
+            priceChart.data.datasets[1].data = subBench.map(v => (v - startB).toFixed(2));
+            priceChart.update();
+            volumeChart.data.labels = subDates; volumeChart.data.datasets[0].data = subVol; volumeChart.update();
+        }
+        {% endif %}
+    </script>
+</body>
+</html>

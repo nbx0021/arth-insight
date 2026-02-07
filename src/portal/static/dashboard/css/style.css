@@ -1,0 +1,370 @@
+/* ARTH-INSIGHT PROFESSIONAL DASHBOARD STYLING */
+/* Author: Narendra Bhandari @ 2026 */
+
+:root {
+    --bull-deep: #064e3b;   
+    --bull-bright: #10b981; 
+    --navy: #0f172a;        
+    --bg-light: #f8fafc;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+}
+
+body { 
+    background-color: var(--bg-light); 
+    margin: 0; 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--navy);
+    -webkit-font-smoothing: antialiased;
+}
+
+.container-main {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+/* --- HEADER & NAVIGATION --- */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, var(--bull-deep) 0%, var(--navy) 100%);
+    padding: 25px 40px;
+    border-radius: 20px;
+    color: white;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.15);
+}
+
+.brand-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.project-logo {
+    height: 55px;
+    width: auto;
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.3));
+}
+
+.brand-text h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.tagline {
+    margin: 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 4px;
+}
+
+/* --- PRICE SUMMARY STRIP --- */
+.price-summary-card {
+    background: white;
+    padding: 20px 0;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-bottom: 35px;
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid var(--border-color);
+}
+
+.price-item {
+    text-align: center;
+    flex: 1;
+    border-right: 1px solid #f1f5f9;
+}
+
+.price-item:last-child {
+    border-right: none;
+}
+
+.price-item span {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.price-item strong {
+    font-size: 1.3rem;
+    color: var(--navy);
+    font-weight: 700;
+}
+
+/* --- NARENDRA_B RATING CARDS --- */
+.section-title {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 800;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.finstar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.finstar-card {
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    border-top: 4px solid #ccc;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+    transition: transform 0.2s;
+}
+
+.finstar-card:hover {
+    transform: translateY(-3px);
+}
+
+.finstar-card h4 {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+}
+
+.finstar-card .rating {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px dashed #e2e8f0;
+}
+
+.metric-val {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.metric-bench {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* --- ESSENTIALS & WEALTH GRID --- */
+.essentials-container {
+    background: white;
+    border-radius: 16px;
+    padding: 25px 30px;
+    margin-bottom: 35px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    border: 1px solid var(--border-color);
+}
+
+.essentials-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.essential-item {
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+}
+
+.essential-item label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.essential-item .val {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.essential-item .unit {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 2px;
+    font-weight: 500;
+}
+
+/* --- PEER TABLE --- */
+.peer-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    margin-top: 10px;
+}
+
+.peer-table th {
+    text-align: right;
+    padding: 12px 15px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.peer-table th:first-child {
+    text-align: left;
+    padding-left: 20px;
+}
+
+.peer-table td {
+    background: #fff;
+    padding: 15px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--navy);
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.95rem;
+}
+
+.peer-table td:first-child {
+    text-align: left;
+    padding-left: 20px;
+    border-left: 1px solid #f1f5f9;
+    border-radius: 10px 0 0 10px;
+}
+
+.peer-table td:last-child {
+    border-right: 1px solid #f1f5f9;
+    border-radius: 0 10px 10px 0;
+}
+
+.current-stock-row td {
+    background: #f0fdf4 !important;
+    border-color: #dcfce7 !important;
+}
+
+/* --- FINANCIAL STATEMENTS TABS --- */
+.nav-pills .nav-link {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 6px 18px;
+    border-radius: 50px;
+    transition: all 0.2s;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: #f1f5f9;
+    color: var(--navy);
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--bull-bright);
+    color: white;
+    box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3);
+}
+
+/* --- FINANCIAL TABLES --- */
+.finance-table {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.finance-table th {
+    text-align: right;
+    padding: 12px;
+    background-color: #f8fafc;
+    color: var(--text-muted);
+    font-weight: 700;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.finance-table th:first-child {
+    text-align: left;
+    padding-left: 15px;
+}
+
+.finance-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--navy);
+    font-family: 'Roboto Mono', 'Consolas', monospace; 
+}
+
+.finance-table td:first-child {
+    font-weight: 500;
+    font-family: 'Inter', sans-serif; 
+}
+
+/* Utilities */
+.trend-up { color: #10b981; font-size: 0.85rem; }
+.trend-down { color: #ef4444; font-size: 0.85rem; }
+.text-primary { color: #3b82f6 !important; }
+.text-success { color: #10b981 !important; }
+.text-danger { color: #ef4444 !important; }
+
+#sharePieChart {
+    max-height: 250px;
+}
+
+footer {
+    background: var(--navy);
+    color: #94a3b8;
+    padding: 40px;
+    margin-top: 60px;
+    text-align: center;
+    border-radius: 20px 20px 0 0;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .finstar-grid, .essentials-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .metric-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 576px) {
+    .header-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    .price-summary-card {
+        flex-wrap: wrap;
+    }
+    .price-item {
+        flex: 1 1 50%;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 10px;
+    }
+}

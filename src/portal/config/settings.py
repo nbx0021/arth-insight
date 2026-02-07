@@ -11,21 +11,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Points to the absolute root 'arth-insight'
 ROOT_DIR = BASE_DIR.parent.parent
 
-# This creates the key file automatically on the server
+# --- SMART CREDENTIALS SETUP ---
 GOOGLE_CREDENTIALS_JSON = os.getenv('GCP_CREDENTIALS_JSON')
 
 if GOOGLE_CREDENTIALS_JSON:
-    # Create the file path
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    cred_file_path = os.path.join(BASE_DIR, 'service-account.json')
+    # 1. Determine where we are (Cloud or Laptop?)
+    if os.path.exists('/app'):
+        # We are on Render (Docker) -> Use the Cloud Folder
+        PROJECT_ROOT = Path('/app')
+    else:
+        # We are on Laptop -> Go up 4 levels to find 'arth-insight' root
+        # config -> portal -> src -> arth-insight
+        PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+
+    # 2. Define the path for the key file
+    cred_file_path = PROJECT_ROOT / 'service-account.json'
     
-    # Write the secret JSON content to a real file
+    # 3. Write the secret key to that file
     with open(cred_file_path, 'w') as f:
         f.write(GOOGLE_CREDENTIALS_JSON)
     
-    # Tell Google libraries where to find it
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_file_path
-
+    # 4. Tell Google libraries to look there
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = str(cred_file_path)
+    
+    # Debug print (Optional: helps you see where it saved)
+    print(f"🔑 Google Credentials saved to: {cred_file_path}")
+# -------------------------------
 # 2. LOAD SECRETS FROM .ENV
 load_dotenv(os.path.join(ROOT_DIR, '.env'))
 

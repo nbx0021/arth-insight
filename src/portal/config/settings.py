@@ -112,13 +112,30 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+import os
+from pathlib import Path
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# BASE_DIR is 'src/portal'
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+# --- STATIC FILES CONFIGURATION ---
+STATIC_URL = '/static/'
+
+# 1. THE DESTINATION (For Production)
+# When we run 'collectstatic', all files move here.
+# We name it 'staticfiles' to avoid conflict with your source folder 'static'.
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# --- THE SMART SWITCH ---
-# Only use WhiteNoise compression when NOT in Debug mode (i.e., only on Render)
+# 2. THE SOURCE (Where you put your CSS/JS/Images during development)
+# This tells Django to look in 'src/portal/static'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# 3. WHITE NOISE (The Server)
+# Compresses files for speed on Render.
 if not DEBUG:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 

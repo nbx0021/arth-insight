@@ -1,12 +1,30 @@
 import os
-from pathlib import Path
 from dotenv import load_dotenv
+import json
+from pathlib import Path
+
+
 
 # 1. BASE PATHS
 # Points to 'src/portal'
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Points to the absolute root 'arth-insight'
 ROOT_DIR = BASE_DIR.parent.parent
+
+# This creates the key file automatically on the server
+GOOGLE_CREDENTIALS_JSON = os.getenv('GCP_CREDENTIALS_JSON')
+
+if GOOGLE_CREDENTIALS_JSON:
+    # Create the file path
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    cred_file_path = os.path.join(BASE_DIR, 'service-account.json')
+    
+    # Write the secret JSON content to a real file
+    with open(cred_file_path, 'w') as f:
+        f.write(GOOGLE_CREDENTIALS_JSON)
+    
+    # Tell Google libraries where to find it
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = cred_file_path
 
 # 2. LOAD SECRETS FROM .ENV
 load_dotenv(os.path.join(ROOT_DIR, '.env'))
@@ -95,5 +113,8 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+ALLOWED_HOSTS = ['*']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

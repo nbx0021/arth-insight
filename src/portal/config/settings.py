@@ -128,4 +128,7 @@ CACHES = {
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 ALLOWED_HOSTS = ['*']
 
+# Add this line so the app knows which dataset to use!
+BIGQUERY_DATASET = os.getenv('BIGQUERY_DATASET', 'stock_raw_data')
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -36,4 +36,4 @@ EXPOSE 8080
 # 9. Start the Server (The "EntryPoint")
 # --chdir src/portal: Tells Gunicorn to look inside the portal folder
 # config.wsgi:application: Points to the WSGI file
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--chdir", "src/portal", "config.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--chdir", "src/portal", "config.wsgi:application"]

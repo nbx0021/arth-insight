@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web:
+    # Build from the PARENT directory (project root)
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    
+    # Overwrite the production command to run the DEV server locally
+    command: python src/portal/manage.py runserver 0.0.0.0:8000
+    
+    # Map port 8000 on laptop to 8000 in container
+    ports:
+      - "8000:8000"
+    
+    # Live Reloading: Sync your local 'src' folder to the container
+    volumes:
+      - ../src:/app/src
+    
+    # Load environment variables from the root .env file
+    env_file:
+      - ../.env

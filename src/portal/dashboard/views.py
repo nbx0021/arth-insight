@@ -497,41 +497,73 @@ def calculate_narendra_rating(data):
 
 def calculate_wealth_growth(ticker_obj, investment_amount, start_year):
     try:
+        # 1. Fetch History
         hist = ticker_obj.history(period="max")
-        if hist.empty: return None
         
-        start_date = f"{start_year}-01-01"
-        hist_filtered = hist[hist.index >= start_date]
+        # Immediate safety check
+        if hist is None or hist.empty: 
+            return None
+
+        # --- SMART TIMEZONE MATCHER ---
+        # We want to keep 'Asia/Kolkata' if it exists.
         
+        target_date = pd.Timestamp(f"{start_year}-01-01")
+        
+        # Check if the downloaded data has a timezone
+        if hist.index.tz is not None:
+            # YES: It has a timezone (e.g., Asia/Kolkata).
+            # So we apply the SAME timezone to our target date.
+            target_date = target_date.tz_localize(hist.index.tz)
+        
+        # Now filtering is safe because both sides match (Apple vs Apple)
+        hist_filtered = hist[hist.index >= target_date]
+        # -----------------------------
+
         is_adjusted = False
         actual_start_year = start_year
-        if hist_filtered.empty: hist_filtered = hist 
         
-        first_date = hist.index[0]
-        if pd.Timestamp(start_date).tz_localize(first_date.tz) < first_date:
+        # Handle case where stock is younger than the requested year
+        # (e.g., Asking for 2011 data for a company listed in 2015)
+        if hist_filtered.empty:
+            hist_filtered = hist  # Fallback to full history
             is_adjusted = True
-            actual_start_year = first_date.year
-            hist_filtered = hist 
+            actual_start_year = hist.index[0].year
+        
+        # Double check validity after fallback
+        if hist_filtered.empty:
+            return None
 
+        # 2. Wealth Calculation
         start_price = hist_filtered['Close'].iloc[0]
         current_price = hist_filtered['Close'].iloc[-1]
+        
+        # Avoid division by zero (e.g., on listing day glitches)
+        if start_price <= 0: return None
+
         shares_bought = investment_amount / start_price 
         current_value = shares_bought * current_price
         
+        # Calculate the series (Wealth over time)
+        wealth_series = (hist_filtered['Close'] * shares_bought).round(0)
+
         return {
             'invested': investment_amount,
             'current_value': round(current_value, 0),
             'growth_pct': round(((current_value - investment_amount)/investment_amount)*100, 2),
             'start_price': round(start_price, 2),
             'curr_price': round(current_price, 2),
+            # Format date nicely for display
             'start_date': hist_filtered.index[0].strftime('%b %Y'),
-            'wealth_series': (hist_filtered['Close'] * shares_bought).round(0).tolist(),
+            'wealth_series': wealth_series.tolist(),
+            # Format dates for the chart (YYYY-MM-DD is standard for charts)
             'dates': hist_filtered.index.strftime('%Y-%m-%d').tolist(),
             'is_adjusted': is_adjusted,
             'actual_start_year': actual_start_year
         }
+
     except Exception as e:
-        print(f"Wealth Error: {e}")
+        # This prints exactly which stock failed and why
+        print(f"Wealth Error for {getattr(ticker_obj, 'ticker', 'Unknown')}: {e}")
         return None
 
 # ==========================================

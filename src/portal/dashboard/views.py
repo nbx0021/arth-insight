@@ -747,7 +747,7 @@ def get_shareholding_data(ticker_obj):
     return data
 
 def get_peer_data_with_share(ticker, sector, current_mcap):
-    # This function remains mostly the same, but now receives a CLEAN list
+    # 1. Get the list of peers
     peers_list = get_dynamic_peers(ticker, sector)
     
     # Fallback if DB is empty or fails
@@ -761,8 +761,20 @@ def get_peer_data_with_share(ticker, sector, current_mcap):
     
     for p in peers_list: 
         try:
+            # Skip invalid tickers immediately
+            if not p or len(p) < 2: continue
+
             p_obj = yf.Ticker(f"{p}.NS")
             p_info = p_obj.info
+            
+            # --- NEW SAFETY CHECK ---
+            # If the stock is delisted (like IPGL), yfinance might return data 
+            # but missing the price. We strictly check for 'currentPrice'.
+            if 'currentPrice' not in p_info:
+                # This quietly skips the bad stock without crashing
+                continue
+            # ------------------------
+
             mcap = to_crores(p_info.get('marketCap', 0))
             
             if mcap > 0:
@@ -771,19 +783,20 @@ def get_peer_data_with_share(ticker, sector, current_mcap):
                     'ticker': p,
                     'price': p_info.get('currentPrice', 0),
                     'mcap': mcap,
-                    # Safe float conversion to prevent crashes
                     'pe': round(safe_float(p_info.get('trailingPE') or 0), 1),
                     'roe': round(safe_float(p_info.get('returnOnEquity') or 0) * 100, 1)
                 })
-        except: continue
+        except Exception:
+            # If yfinance throws a 404 error, we just ignore it and move to the next peer
+            continue
 
     # Calculate share percentage
-    for p in peer_data: p['share'] = round((p['mcap'] / total_sector_mcap) * 100, 1)
+    for p in peer_data: 
+        p['share'] = round((p['mcap'] / total_sector_mcap) * 100, 1)
     
     current_share = round((current_mcap / total_sector_mcap) * 100, 1) if total_sector_mcap > 0 else 100
     
     return sorted(peer_data, key=lambda x: x['mcap'], reverse=True), current_share
-
 
 def get_dynamic_peers(ticker, sector):
     client = get_bq_client()

@@ -8,8 +8,10 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 # Set a dummy secret key for the build phase (fix for collectstatic)
 # This passes the dummy key ONLY during the command execution
-RUN DJANGO_SECRET_KEY=build_dummy_key python src/portal/manage.py collectstatic --noinput
-
+# We use the full path and set PYTHONPATH to the portal directory
+RUN DJANGO_SECRET_KEY=build_dummy_key \
+    PYTHONPATH=/app/src/portal \
+    python src/portal/manage.py collectstatic --noinput --clear
 # 3. Set Working Directory
 WORKDIR /app
 

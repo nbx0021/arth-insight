@@ -7,10 +7,12 @@ from datetime import datetime, time
 import pytz
 import requests
 from io import StringIO
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- 1. DEFINE PATHS ---
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_script_dir)
+# In Docker, project_root is /app. We need /app/src/portal for Django.
 django_root = os.path.join(project_root, 'src', 'portal')
 
 if project_root not in sys.path: sys.path.append(project_root)
@@ -29,70 +31,82 @@ except ImportError as e:
     sys.exit(1)
 
 def is_market_open():
+    """Checks if the NSE market is currently open."""
     tz = pytz.timezone('Asia/Kolkata')
     now = datetime.now(tz)
     if now.weekday() >= 5: return False
     market_start, market_end = time(9, 0), time(16, 0)
     if not (market_start <= now.time() <= market_end): return False
-    return not mcal.get_calendar('NSE').schedule(start_date=now.date(), end_date=now.date()).empty
+    try:
+        schedule = mcal.get_calendar('NSE').schedule(start_date=now.date(), end_date=now.date())
+        return not schedule.empty
+    except:
+        return True # Fallback to open if calendar service fails
 
 def get_comprehensive_tickers():
-    """
-    Fetches all listed stocks and picks the top 250 (Nifty 200 + selected midcaps)
-    to ensure all industries are covered with at least 5-10 stocks.
-    """
+    """Fetches top 250+ tickers to ensure sector diversity."""
     print("📋 Fetching Comprehensive NSE Stock List...")
-    
-    # We use the Nifty 500 list to ensure we get every industry (Aviation, Sugar, Defense, etc.)
     url = "https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv"
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=15)
+        response.raise_for_status()
         df = pd.read_csv(StringIO(response.text))
         
-        # This list contains Industry columns, so we can ensure diversity
-        # We take the first 250 stocks which covers almost all large and mid-cap industries
+        # Take Nifty 250 for broad coverage
         tickers = df['Symbol'].tolist()[:250] 
         
-        # Add a few manual important ones if they are missing (Aviation/Defense)
-        important_extras = ["JETAIRWAYS", "SPICEJET", "HAL", "BEL", "MAZDOCK", "RVNL", "IRFC"]
+        # Ensure mission-critical sectors are present
+        important_extras = ["JETAIRWAYS", "SPICEJET", "HAL", "BEL", "MAZDOCK", "RVNL", "IRFC", "ZOMATO"]
         for extra in important_extras:
             if extra not in tickers:
                 tickers.append(extra)
 
-        print(f"✅ Successfully prepared {len(tickers)} diverse industry tickers.")
+        print(f"✅ Prepared {len(tickers)} tickers.")
         return tickers
-
     except Exception as e:
-        print(f"⚠️ Fetch Failed: {e}. Using Nifty 50 Fallback.")
+        print(f"⚠️ Ticker Fetch Failed: {e}. Using Fallback.")
         return ["RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "ITC", "SBIN", "LT", "HINDUNILVR"]
 
+def sync_wrapper(symbol, index, total):
+    """Wrapper to handle individual stock sync inside the thread pool."""
+    try:
+        print(f"🔄 [{index}/{total}] Processing {symbol}...")
+        sync_stock_on_demand(symbol)
+        return f"✅ {symbol} synced."
+    except Exception as e:
+        return f"❌ Error {symbol}: {str(e)}"
+
 def run_etl():
-    print("🚀 Starting Industry-Wide Market Data ETL...")
+    print("🚀 Starting Industry-Wide Market Data ETL (Multithreaded)...")
     
-    # Bypass market check if 'force' is used
+    # 1. Market Check
     if len(sys.argv) > 1 and sys.argv[1] == 'force':
         print("💪 Force Mode Activated.")
     elif not is_market_open():
-        print("⏰ Market is closed. Use 'force' to run anyway.")
+        print("⏰ Market is closed. Execution skipped.")
         return
 
+    # 2. Get Tickers
     tickers = get_comprehensive_tickers()
-    
-    # --- PRO TIP: Using a smaller batch for testing ---
-    # If you want to run ALL 250, leave it as is. 
-    # If your GitHub Actions times out, reduce the 250 in get_comprehensive_tickers to 100.
-    
-    for i, symbol in enumerate(tickers):
-        print(f"[{i+1}/{len(tickers)}] Processing {symbol}...")
-        try:
-            # This triggers your views.py logic (saves to BigQuery _v3)
-            sync_stock_on_demand(symbol) 
-        except Exception as e:
-            print(f"❌ Error syncing {symbol}: {e}")
+    total = len(tickers)
 
-    print("✅ ETL Complete. All industries refreshed in BigQuery _v3.")
+    # 3. Parallel Execution (Threading)
+    # Using 10 workers balances speed and API rate limits
+    print(f"⚡ Starting Parallel Sync with 10 workers...")
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(sync_wrapper, symbol, i+1, total) for i, symbol in enumerate(tickers)]
+        
+        for future in as_completed(futures):
+            # Print results as they finish
+            print(future.result())
+
+    print("\n" + "="*30)
+    print("✅ ETL Complete. BigQuery _v3 updated.")
+    print("="*30)
 
 if __name__ == "__main__":
     run_etl()

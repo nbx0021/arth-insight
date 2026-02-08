@@ -1,45 +1,38 @@
-# 1. Base Image: Python 3.10 (Slim version for speed)
+# 1. Base Image
 FROM python:3.10-slim
 
 # 2. Set Environment Variables
-# Ensures logs stream directly to Google Cloud Console
 ENV PYTHONUNBUFFERED=1
-# Prevents Python from writing .pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
-# Set a dummy secret key for the build phase (fix for collectstatic)
-# This passes the dummy key ONLY during the command execution
-# We use the full path and set PYTHONPATH to the portal directory
-RUN DJANGO_SECRET_KEY=build_dummy_key \
-    PYTHONPATH=/app/src/portal \
-    python src/portal/manage.py collectstatic --noinput --clear
+
 # 3. Set Working Directory
 WORKDIR /app
 
-# 4. Install System Dependencies (Needed for PostgreSQL/BigQuery)
+# 4. Install System Dependencies (gcc is needed for some python packages)
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 5. Install Python Dependencies
-# We copy ONLY requirements.txt first to leverage Docker cache
+# We do this BEFORE copying the whole project to save time (Docker Cache)
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 6. Copy the Entire Project
+# Now your code actually exists inside the container
 COPY . /app/
 
 # 7. Collect Static Files
-# This gathers all CSS/JS into one folder for the web server
-RUN python src/portal/manage.py collectstatic --noinput --clear
+# We run this NOW because the code and libraries are finally present.
+# We use the absolute path /app/src/portal/manage.py
+RUN DJANGO_SECRET_KEY=build_dummy_key \
+    PYTHONPATH=/app/src/portal \
+    python /app/src/portal/manage.py collectstatic --noinput --clear
 
-# 8. Expose the Port (Google Cloud expects 8080)
+# 8. Expose the Port
 EXPOSE 8080
 
-# Collect static files
-RUN python src/portal/manage.py collectstatic --noinput
-
-# 9. Start the Server (The "EntryPoint")
-# --chdir src/portal: Tells Gunicorn to look inside the portal folder
-# config.wsgi:application: Points to the WSGI file
+# 9. Start the Server
+# We use --chdir so Gunicorn starts inside the portal folder
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--chdir", "src/portal", "config.wsgi:application"]

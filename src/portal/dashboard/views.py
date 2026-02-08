@@ -714,100 +714,68 @@ def get_shareholding_data(ticker_obj):
     except: pass
     return data
 
-def get_shareholding_data(ticker_obj):
-    data = {'pie_labels': [], 'pie_data': [], 'investors': []}
-    try:
-        info = ticker_obj.info
-        prom_pct = round(safe_float(info.get('heldPercentInsiders', 0))*100, 2)
-        inst_pct = round(safe_float(info.get('heldPercentInstitutions', 0))*100, 2)
-        pub_pct = max(0, round(100 - prom_pct - inst_pct, 2))
-        data['pie_labels'] = ['Promoters', 'Institutions', 'Public']
-        data['pie_data'] = [prom_pct, inst_pct, pub_pct]
-
-        frames = []
-        def standardize_frame(df, category_label):
-            if df is None or df.empty: return None
-            df = df.copy().reset_index()
-            col_map = {'holder': None, 'shares': None, 'date': None, 'value': None}
-            for col in df.columns:
-                sample = df[col].dropna().iloc[0] if not df[col].dropna().empty else None
-                if sample is None: continue
-                col_str = str(col).lower()
-                if 'holder' in col_str or isinstance(sample, str):
-                    if not col_map['holder']: col_map['holder'] = col
-                elif 'share' in col_str or 'held' in col_str: col_map['shares'] = col
-                elif 'date' in col_str or isinstance(sample, (datetime, pd.Timestamp)): col_map['date'] = col
-                elif 'value' in col_str: col_map['value'] = col
-            clean_df = pd.DataFrame()
-            if col_map['holder']: clean_df['Holder'] = df[col_map['holder']]
-            else: return None
-            clean_df['Shares'] = df[col_map['shares']] if col_map['shares'] else 0
-            clean_df['Value'] = df[col_map['value']] if col_map['value'] else 0
-            clean_df['Date'] = df[col_map['date']] if col_map['date'] else ''
-            clean_df['Category'] = category_label
-            return clean_df
-
-        try:
-            fii_clean = standardize_frame(ticker_obj.institutional_holders, 'FII / Foreign')
-            if fii_clean is not None: frames.append(fii_clean)
-        except: pass
-        try:
-            dii_clean = standardize_frame(ticker_obj.mutualfund_holders, 'DII / Mutual Fund')
-            if dii_clean is not None: frames.append(dii_clean)
-        except: pass
-
-        if frames:
-            combined = pd.concat(frames)
-            if 'Shares' in combined.columns: combined = combined.sort_values(by='Shares', ascending=False)
-            for _, row in combined.head(10).iterrows():
-                name = str(row.get('Holder', 'Unknown'))
-                if any(x in name for x in ['2023', '2024', '2025']): continue 
-                data['investors'].append({
-                    'name': name,
-                    'category': row.get('Category', 'Institution'),
-                    'shares': format_shares(row.get('Shares', 0)),
-                    'value': to_crores(row.get('Value', 0)),
-                    'date': str(row.get('Date', ''))[:10]
-                })
-    except: pass
-    return data
-
 def get_peer_data_with_share(ticker, sector, current_mcap):
+    # This function remains mostly the same, but now receives a CLEAN list
     peers_list = get_dynamic_peers(ticker, sector)
+    
+    # Fallback if DB is empty or fails
     if not peers_list: 
-        if "TECH" in sector: peers_list = ["TCS", "INFY"]
-        elif "BANK" in sector: peers_list = ["HDFCBANK", "ICICIBANK"]
+        if "TECH" in sector: peers_list = ["TCS", "INFY", "HCLTECH"]
+        elif "BANK" in sector: peers_list = ["HDFCBANK", "ICICIBANK", "SBIN"]
         else: peers_list = []
+        
     peer_data = []
     total_sector_mcap = current_mcap
+    
     for p in peers_list: 
         try:
             p_obj = yf.Ticker(f"{p}.NS")
             p_info = p_obj.info
             mcap = to_crores(p_info.get('marketCap', 0))
+            
             if mcap > 0:
                 total_sector_mcap += mcap
                 peer_data.append({
                     'ticker': p,
                     'price': p_info.get('currentPrice', 0),
                     'mcap': mcap,
+                    # Safe float conversion to prevent crashes
                     'pe': round(safe_float(p_info.get('trailingPE') or 0), 1),
                     'roe': round(safe_float(p_info.get('returnOnEquity') or 0) * 100, 1)
                 })
         except: continue
+
+    # Calculate share percentage
     for p in peer_data: p['share'] = round((p['mcap'] / total_sector_mcap) * 100, 1)
+    
     current_share = round((current_mcap / total_sector_mcap) * 100, 1) if total_sector_mcap > 0 else 100
+    
     return sorted(peer_data, key=lambda x: x['mcap'], reverse=True), current_share
+
 
 def get_dynamic_peers(ticker, sector):
     client = get_bq_client()
-    dataset_id = os.getenv("GCP_DATASET_ID")
+    # Use the variable name consistent with your Render settings
+    dataset_id = os.getenv("GCP_DATASET_ID", "stock_raw_data")
     table_id = f"{client.project}.{dataset_id}.stock_intelligence"
+    
     try:
-        query = f"SELECT ticker FROM `{table_id}` WHERE sector = '{sector}' AND ticker != '{ticker}' LIMIT 5"
+        # --- THE FIX: SMART DEDUPLICATION ---
+        # 1. GROUP BY ticker: This merges duplicates (e.g., 5 'TCS' rows become 1).
+        # 2. ORDER BY MAX(mcap): We pick the 'biggest' companies as peers, ignoring small junk data.
+        query = f"""
+            SELECT ticker 
+            FROM `{table_id}` 
+            WHERE sector = '{sector}' AND ticker != '{ticker}' 
+            GROUP BY ticker 
+            ORDER BY MAX(mcap) DESC 
+            LIMIT 5
+        """
         df = client.query(query).to_dataframe()
         return df['ticker'].tolist() if not df.empty else []
-    except: return []
+    except Exception as e:
+        print(f"Error fetching peers: {e}")
+        return []
 
 # ==========================================
 # 6. SYNC & MAIN CONTROLLER

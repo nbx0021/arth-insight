@@ -21,6 +21,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
-          context: .
+          context: . # This stays as "." so it can see your requirements.txt in the root
+          file: ./deploy/Dockerfile # <--- THIS IS THE FIX
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest

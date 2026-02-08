@@ -366,32 +366,43 @@
             </div>
         </div>
 
-        <div class="essentials-container">
-            <h5 class="section-title">📊 Shareholding Pattern & Top Investors</h5>
-            <div class="row align-items-center">
-                <div class="col-md-4 border-end"><div style="height: 250px; position: relative;"><canvas id="sharePieChart"></canvas></div></div>
-                <div class="col-md-8">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover" style="font-size: 0.85rem;">
-                            <thead class="table-light"><tr><th>Top Institutional Holder</th><th>Category</th><th class="text-end">Shares</th><th class="text-end">Value (Cr)</th><th class="text-end">Date</th></tr></thead>
-                            <tbody>
-                                {% for inv in shareholding.investors %}
-                                <tr>
-                                    <td class="fw-bold text-secondary">{{ inv.name }}</td>
-                                    <td>{% if 'FII' in inv.category %}<span class="badge bg-primary bg-opacity-75">FII / Foreign</span>{% elif 'DII' in inv.category %}<span class="badge bg-success bg-opacity-75">DII / Mutual</span>{% else %}<span class="badge bg-secondary">Institution</span>{% endif %}</td>
-                                    <td class="text-end">{{ inv.shares }}</td>
-                                    <td class="text-end">₹{{ inv.value }}</td>
-                                    <td class="text-end text-muted">{{ inv.date }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="5" class="text-center text-muted">No detailed institutional data available.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+        <div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0 fw-bold">📢 Shareholding Pattern</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 text-center">
+                <canvas id="shareholdingChart" style="max-height: 250px;"></canvas>
+                <p id="no-share-data" class="text-muted mt-3" style="display: none;">
+                    No shareholding data available for this stock.
+                </p>
+            </div>
+
+            <div class="col-md-6">
+                <h6 class="text-muted text-uppercase small fw-bold mb-3">Top Investors / Institutions</h6>
+                
+                {% if shareholding.top_investors %}
+                    <ul class="list-group list-group-flush">
+                        {% for investor in shareholding.top_investors %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-dark small">{{ investor.name }}</span>
+                            <span class="badge bg-light text-dark border">{{ investor.stake }}%</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-light border text-center p-3">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-lock"></i> Detailed investor names are currently unavailable from the data source.
+                            <br>(Total Institutional Holding: {{ shareholding.institution }}%)
+                        </small>
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
+    </div>
+</div>
 
         {% if financials %}
         <div class="essentials-container">
@@ -552,20 +563,64 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: true, ticks: { maxTicksLimit: 6 } }, y: { display: false } } }
         });
 
-        {% if shareholding.pie_data %}
-        new Chart(document.getElementById('sharePieChart'), {
-            type: 'doughnut',
-            data: {
-                labels: {{ pie_labels|safe }},
-                datasets: [{
-                    data: {{ pie_data|safe }},
-                    backgroundColor: ['#10b981', '#3b82f6', '#94a3b8'],
-                    borderWidth: 0
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '70%' }
-        });
-        {% endif %}
+        
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // 1. Read the JSON data sent from Python
+        // We use 'safe' filter so Django outputs the raw list: [50.5, 20.0, ...]
+        // Use default if variable is missing to prevent JS crash
+        var pieLabels = {{ pie_labels|default:"[]"|safe }};
+        var pieData = {{ pie_data|default:"[]"|safe }};
+        
+        // 2. Safety Check: If data is empty or all zeros
+        var total = 0;
+        if (Array.isArray(pieData) && pieData.length > 0) {
+            total = pieData.reduce((a, b) => a + b, 0);
+        }
+
+        var ctx = document.getElementById('shareholdingChart');
+        var msg = document.getElementById('no-share-data');
+
+        if (ctx && total > 0) {
+            // HIDE the "No Data" message
+            if(msg) msg.style.display = 'none';
+            // SHOW the Chart canvas
+            ctx.style.display = 'block';
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: pieLabels, 
+                    datasets: [{
+                        data: pieData, 
+                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
+                        hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+                        hoverBorderColor: "rgba(234, 236, 244, 1)",
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + '%';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%',
+                }
+            });
+        } else {
+            // HIDE the Chart
+            if(ctx) ctx.style.display = 'none';
+            // SHOW the "No Data" message
+            if(msg) msg.style.display = 'block';
+        }
+    });
+
 
         function updateChart(period, btn) {
             document.querySelectorAll('#filterBtns .btn').forEach(b => { b.classList.remove('active', 'btn-outline-primary'); b.classList.add('btn-outline-secondary'); });

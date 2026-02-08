@@ -1,15 +1,24 @@
-name: Build and Push to Docker Hub
+name: Docker Market Data ETL
 
 on:
-  push:
-    branches: [ main ]
+  schedule:
+    # Triggering at specific times to simulate your timeframe (UTC)
+    # 03:30 UTC = 09:00 IST (Market Open)
+    # 05:00 UTC = 10:30 IST (~80-90 min later)
+    # 06:30 UTC = 12:00 IST (~90 min later)
+    # 08:00 UTC = 13:30 IST (~90 min later)
+    # 09:30 UTC = 15:00 IST (~90 min later)
+    # 10:30 UTC = 16:00 IST (Final Sync)
+    - cron: '30 3,5,6,8,9,10 * * 1-5'
+  
+  workflow_dispatch: # Allows manual run
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+  run-etl-container:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Check out the repo
+      - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Log in to Docker Hub
@@ -18,10 +27,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./deploy/Dockerfile
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest
+      - name: Run Market Feed
+        env:
+          GCP_DATASET_ID: ${{ secrets.GCP_DATASET_ID }}
+          GCP_SERVICE_JSON: ${{ secrets.GCP_SERVICE_JSON }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        run: |
+          echo "$GCP_SERVICE_JSON" > service-account.json
+          
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest
+          
+          docker run \
+            -v $(pwd)/service-account.json:/app/service-account.json \
+            -e GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json \
+            -e GCP_DATASET_ID=$GCP_DATASET_ID \
+            -e DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY \
+            ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest \
+            python scripts/market_feed.py

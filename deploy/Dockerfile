@@ -7,7 +7,8 @@ ENV PYTHONUNBUFFERED=1
 # Prevents Python from writing .pyc files
 ENV PYTHONDONTWRITEBYTECODE=1
 # Set a dummy secret key for the build phase (fix for collectstatic)
-ENV DJANGO_SECRET_KEY="build_mode_unsafe_key"
+# This passes the dummy key ONLY during the command execution
+RUN DJANGO_SECRET_KEY=build_dummy_key python src/portal/manage.py collectstatic --noinput
 
 # 3. Set Working Directory
 WORKDIR /app

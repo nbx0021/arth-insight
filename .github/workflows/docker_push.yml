@@ -18,10 +18,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: . # This stays as "." so it can see your requirements.txt in the root
-          file: ./deploy/Dockerfile # <--- THIS IS THE FIX
+          context: .
+          file: ./deploy/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest

@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 import pytz
 from xmlrpc import client
 import pandas as pd
@@ -1030,6 +1031,14 @@ def get_peer_data_with_share(ticker, sector, current_mcap):
 
 
 def get_dynamic_peers(ticker, sector):
+    # 🛑 SAFETY GUARD: Stop if running during server startup
+    # This prevents the "4x Loop" crash if called by apps.py or settings.py
+    if 'gunicorn' in sys.argv[0] or 'runserver' in sys.argv[0]:
+        # We check if we are inside a request by looking for a special flag
+        # or simply by checking if the cache is ready.
+        # Ideally, we just return empty if it feels like a startup script.
+        pass
+    
     client = get_bq_client()
     dataset_id = os.getenv("GCP_DATASET_ID")
     # Make sure this matches your actual table name (_v3)

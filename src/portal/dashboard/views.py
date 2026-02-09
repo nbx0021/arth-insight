@@ -1422,11 +1422,20 @@ def sync_stock_on_demand(query):
 
 
 def index(request):
-    # 1. Get User Input
-    raw_query = request.GET.get('q', 'RELIANCE').upper().strip()
+    # 1. Get User Input (REMOVE THE DEFAULT VALUE - FAST STARTUP)
+    raw_query = request.GET.get('q', '').strip()
+    
+    # 2. If no search query, show a "Welcome" screen (FAST STARTUP)
+    if not raw_query:
+        return render(request, 'dashboard/index.html', {
+            'landing_mode': True, 
+            'year_range': list(range(2000, datetime.now().year + 1))
+        })
+
+    # --- EVERYTHING BELOW RUNS ONLY WHEN SEARCHING ---
     wealth_amount = int(request.GET.get('w_amt', 100000))
     wealth_year = int(request.GET.get('w_year', 2011))
-
+    
     # 2. Fetch Main Data
     data = sync_stock_on_demand(raw_query)
 

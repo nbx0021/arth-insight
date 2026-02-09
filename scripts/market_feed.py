@@ -60,7 +60,42 @@ def get_comprehensive_tickers():
         tickers = df['Symbol'].tolist()[:250] 
         
         # Ensure mission-critical sectors are present
-        important_extras = ["JETAIRWAYS", "SPICEJET", "HAL", "BEL", "MAZDOCK", "RVNL", "IRFC", "ZOMATO"]
+        # FORCE PRIORITY: These 50 stocks will be processed FIRST.
+        # This ensures that even if the script times out, the "Giants" are safe.
+        important_extras = [
+            # --- TOP 10 HEAVYWEIGHTS ---
+            "RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY",
+            "BHARTIARTL", "SBIN", "ITC", "LICI", "HINDUNILVR",
+            
+            # --- MAJOR BANKS & FINANCE ---
+            "KOTAKBANK", "AXISBANK", "BAJFINANCE", "BAJAJFINSV", 
+            "HDFCLIFE", "SBILIFE", "INDUSINDBK", "BANKBARODA", "PNB",
+            
+            # --- TECH & IT SERVICES ---
+            "HCLTECH", "WIPRO", "TECHM", "LTIM", "PERSISTENT",
+            
+            # --- AUTO & MOTORS ---
+            "M&M", "TATAMOTORS", "MARUTI", "BAJAJ-AUTO", 
+            "EICHERMOT", "HEROMOTOCO", "TVSMOTOR",
+            
+            # --- ENERGY, OIL & POWER ---
+            "NTPC", "ONGC", "POWERGRID", "COALINDIA", 
+            "ADANIGREEN", "ADANIPOWER", "TATA_POWER", "BPCL", "IOC",
+            
+            # --- CONGLOMERATES & INFRA ---
+            "LT", "ADANIENT", "ADANIPORTS", "ULTRACEMCO", "GRASIM", "AMBUJACEM",
+            
+            # --- METALS & COMMODITIES ---
+            "TATASTEEL", "HINDALCO", "JSWSTEEL", "VEDL",
+            
+            # --- PHARMA & HEALTHCARE ---
+            "SUNPHARMA", "DIVISLAB", "DRREDDY", "CIPLA", "APOLLOHOSP",
+            
+            # --- CONSUMER & RETAIL ---
+            "TITAN", "ASIANPAINT", "NESTLEIND", "BRITANNIA", 
+            "TATACONSUM", "ZOMATO", "TRENT", "DMART"
+        ]
+            
         for extra in important_extras:
             if extra not in tickers:
                 tickers.append(extra)

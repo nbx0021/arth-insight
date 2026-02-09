@@ -91,17 +91,6 @@ CUSTOM_ALIASES = {
     "SPICE JET": "500285.BO",
 }
 
-# --- LOAD MAPPING ON STARTUP ---
-# We try to get it from cache first, if not, we fetch it (takes 1 second)
-# TICKER_MAPPING = cache.get('nse_master_mapping')
-
-# if not TICKER_MAPPING:
-#     print("🌍 Downloading latest NSE Stock List...")
-#     TICKER_MAPPING = get_nse_master_list()
-#     # Save to cache for 24 hours so we don't download it every time
-#     cache.set('nse_master_mapping', TICKER_MAPPING, timeout=60*60*24)
-
-
 def resolve_symbol_from_name(query):
     # 1. CLEAN THE INPUT
     clean_query = query.upper()
@@ -113,20 +102,19 @@ def resolve_symbol_from_name(query):
     if clean_query in CUSTOM_ALIASES:
         return CUSTOM_ALIASES[clean_query]
 
-    # 3. CHECK CACHE (But DO NOT download if missing - fail fast!)
-    # We deleted the global TICKER_MAPPING, so we just check cache here.
+    # 3. CHECK CACHE (Safe Check)
+    # We DO NOT download if missing. This prevents the startup crash.
     full_mapping = cache.get('nse_master_mapping')
     
     if full_mapping:
         if clean_query in full_mapping:
             return full_mapping[clean_query]
-        # Partial match logic...
+        # Partial match logic
         for company_name, ticker in full_mapping.items():
             if clean_query in company_name.replace("LIMITED", "").strip():
                 return ticker
 
-    # 4. Fallback (If cache is empty, just use the query)
-    # This prevents the "Startup Crash" by skipping the download.
+    # 4. Fail-Safe: Just return the query itself
     return clean_query
 
 

@@ -93,13 +93,13 @@ CUSTOM_ALIASES = {
 
 # --- LOAD MAPPING ON STARTUP ---
 # We try to get it from cache first, if not, we fetch it (takes 1 second)
-TICKER_MAPPING = cache.get('nse_master_mapping')
+# TICKER_MAPPING = cache.get('nse_master_mapping')
 
-if not TICKER_MAPPING:
-    print("🌍 Downloading latest NSE Stock List...")
-    TICKER_MAPPING = get_nse_master_list()
-    # Save to cache for 24 hours so we don't download it every time
-    cache.set('nse_master_mapping', TICKER_MAPPING, timeout=60*60*24)
+# if not TICKER_MAPPING:
+#     print("🌍 Downloading latest NSE Stock List...")
+#     TICKER_MAPPING = get_nse_master_list()
+#     # Save to cache for 24 hours so we don't download it every time
+#     cache.set('nse_master_mapping', TICKER_MAPPING, timeout=60*60*24)
 
 
 def resolve_symbol_from_name(query):

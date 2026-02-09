@@ -1467,7 +1467,7 @@ def index(request):
         print(f"⚠️ Analysis Module Error: {e}")
         financials, fin_analysis, wealth_data = {}, {}, None
 
-    # 5. Shareholding (From Payload)
+    # 5. Shareholding
     shareholding = data.get('shareholding', {})
 
     # 6. Pie Chart Data
@@ -1508,11 +1508,18 @@ def index(request):
     except Exception as e:
         print(f"⚠️ Benchmark Error: {e}")
 
-    # --- CRITICAL FIX: CALL PEERS FUNCTION ONLY ONCE ---
+    # =========================================================
+    # 🚨 CRITICAL FIX: CALL PEERS ONCE, USE TWICE
+    # =========================================================
+    # Before, you called this 4 times. Now we call it 1 time.
     peer_result = get_peer_data_with_share(symbol, data['sector'], data['mcap'])
-    # Default to empty if None or empty list
-    peers_list = peer_result[0] if peer_result else []
-    my_share_data = peer_result[1] if peer_result else {}
+    
+    if peer_result and len(peer_result) == 2:
+        peers_list = peer_result[0]
+        my_share_data = peer_result[1]
+    else:
+        peers_list = []
+        my_share_data = {}
 
     # 8. Prepare Context
     context = {
@@ -1520,7 +1527,7 @@ def index(request):
         'data': data,
         'narendra_rating': calculate_narendra_rating(data),
         
-        # ✅ FIXED: Using the pre-calculated variables
+        # ✅ USE THE PRE-CALCULATED VARIABLES
         'peers': peers_list,
         'my_share': my_share_data,
 
@@ -1528,7 +1535,6 @@ def index(request):
         'fin_analysis': fin_analysis,
         'shareholding': shareholding,
 
-        # Chart JSON Data
         'pie_labels': json.dumps(pie_labels_list),
         'pie_data': json.dumps(pie_data_list),
         'chart_dates': json.dumps(dates),

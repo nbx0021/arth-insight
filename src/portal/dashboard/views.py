@@ -1438,13 +1438,14 @@ def sync_stock_on_demand(query):
             return backup_data
         return None
 
+
 def index(request):
     # 1. Get User Input
     raw_query = request.GET.get('q', 'RELIANCE').upper().strip()
     wealth_amount = int(request.GET.get('w_amt', 100000))
     wealth_year = int(request.GET.get('w_year', 2011))
 
-    # 2. Fetch Main Data (This includes Shareholding!)
+    # 2. Fetch Main Data
     data = sync_stock_on_demand(raw_query)
 
     # Handle Invalid Stock
@@ -1453,30 +1454,23 @@ def index(request):
 
     symbol = data['ticker']
 
-    # 3. Re-create Ticker Object (Needed for Financials & Wealth functions only)
-    # We must handle the suffix correctly again here
-    if ".BO" in symbol:
-        t_name = symbol
-    else:
-        t_name = f"{symbol}.NS"
-
+    # 3. Re-create Ticker Object
+    t_name = symbol if ".BO" in symbol else f"{symbol}.NS"
     ticker_obj = yf.Ticker(t_name)
 
-    # 4. Run Analysis Modules (Using ticker_obj)
+    # 4. Run Analysis Modules
     try:
         financials = get_detailed_financials(ticker_obj)
         fin_analysis = analyze_financial_health(ticker_obj)
-        wealth_data = calculate_wealth_growth(
-            ticker_obj, wealth_amount, wealth_year)
+        wealth_data = calculate_wealth_growth(ticker_obj, wealth_amount, wealth_year)
     except Exception as e:
         print(f"⚠️ Analysis Module Error: {e}")
         financials, fin_analysis, wealth_data = {}, {}, None
 
-    # 5. GET SHAREHOLDING (No new calculation needed!)
-    # We just grab it from the 'data' payload we already fetched
+    # 5. Shareholding (From Payload)
     shareholding = data.get('shareholding', {})
 
-    # 6. Prepare Pie Chart Data manually
+    # 6. Pie Chart Data
     pie_labels_list = ["Promoters", "Institutions", "Public & Others"]
     pie_data_list = [
         shareholding.get('promoter', 0),
@@ -1484,16 +1478,14 @@ def index(request):
         shareholding.get('public', 0)
     ]
 
-    # 7. Benchmark Comparison (Nifty vs Stock)
+    # 7. Benchmark Comparison
     bench_sym = SECTOR_BENCHMARKS.get(data['sector'], "^NSEI")
     bench_stats = {}
     dates, stock_pct, bench_pct, volumes = [], [], [], []
 
     try:
-        b_hist = yf.Ticker(bench_sym).history(period="5y")
-
-        # Ensure we have chart data before comparing
         if 'chart_prices' in data and data['chart_prices']:
+            b_hist = yf.Ticker(bench_sym).history(period="5y")
             min_len = min(len(data['chart_prices']), len(b_hist))
 
             stock_series = data['chart_prices'][-min_len:]
@@ -1511,21 +1503,26 @@ def index(request):
                     'stock_return_pct': round(((s_end - s_start)/s_start)*100, 2) if s_start != 0 else 0
                 }
 
-                stock_pct = [round(((p - s_start)/s_start)*100, 2)
-                             for p in stock_series]
-                bench_pct = [round(((p - b_start)/b_start)*100, 2)
-                             for p in bench_vals]
+                stock_pct = [round(((p - s_start)/s_start)*100, 2) for p in stock_series]
+                bench_pct = [round(((p - b_start)/b_start)*100, 2) for p in bench_vals]
     except Exception as e:
         print(f"⚠️ Benchmark Error: {e}")
+
+    # --- CRITICAL FIX: CALL PEERS FUNCTION ONLY ONCE ---
+    peer_result = get_peer_data_with_share(symbol, data['sector'], data['mcap'])
+    # Default to empty if None or empty list
+    peers_list = peer_result[0] if peer_result else []
+    my_share_data = peer_result[1] if peer_result else {}
 
     # 8. Prepare Context
     context = {
         'symbol': symbol,
         'data': data,
         'narendra_rating': calculate_narendra_rating(data),
-        # Using safe index access for peers in case list is empty
-        'peers': get_peer_data_with_share(symbol, data['sector'], data['mcap'])[0] if get_peer_data_with_share(symbol, data['sector'], data['mcap']) else [],
-        'my_share': get_peer_data_with_share(symbol, data['sector'], data['mcap'])[1] if get_peer_data_with_share(symbol, data['sector'], data['mcap']) else {},
+        
+        # ✅ FIXED: Using the pre-calculated variables
+        'peers': peers_list,
+        'my_share': my_share_data,
 
         'financials': financials,
         'fin_analysis': fin_analysis,

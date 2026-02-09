@@ -25,6 +25,7 @@ from src.utils.indicators import calculate_rsi
 from .utils import get_nse_master_list
 from django.core.cache import cache
 
+
 load_dotenv()
 
 # ==========================================
@@ -102,46 +103,30 @@ if not TICKER_MAPPING:
 
 
 def resolve_symbol_from_name(query):
-    # 1. CLEAN THE INPUT (Aggressive Cleaning)
-    # We remove "LTD", "LIMITED", "INDIA", dots, and extra spaces.
-    # This turns "Crompton... Ltd." -> "CROMPTON GREAVES CONSUMER ELECTRICALS"
+    # 1. CLEAN THE INPUT
     clean_query = query.upper()
     for word in [".", " LTD", " LIMITED", " INDIA", " PVT", " PRIVATE", " INC"]:
         clean_query = clean_query.replace(word, "")
     clean_query = clean_query.strip()
 
-    # 2. CHECK MANUAL ALIASES (Your Cheat Sheet)
+    # 2. CHECK MANUAL ALIASES
     if clean_query in CUSTOM_ALIASES:
         return CUSTOM_ALIASES[clean_query]
 
-    # 3. CHECK DYNAMIC MASTER LIST (From utils.py)
-    from .utils import get_nse_master_list
-    from django.core.cache import cache
-
-    # Fetch mapping
+    # 3. CHECK CACHE (But DO NOT download if missing - fail fast!)
+    # We deleted the global TICKER_MAPPING, so we just check cache here.
     full_mapping = cache.get('nse_master_mapping')
-    if not full_mapping:
-        full_mapping = get_nse_master_list()
-        cache.set('nse_master_mapping', full_mapping, timeout=60*60*24)
-
-    # 4. SEARCH LOGIC (The Fix)
+    
     if full_mapping:
-        # A. Direct Match
         if clean_query in full_mapping:
             return full_mapping[clean_query]
-
-        # B. Partial Match (Loop through the list)
-        # We check if your clean query is inside the company name
+        # Partial match logic...
         for company_name, ticker in full_mapping.items():
-            # Clean the company name from the list too!
-            clean_company_name = company_name.replace(
-                "LIMITED", "").replace("LTD", "").strip()
-
-            if clean_query in clean_company_name:
-                # FOUND IT! (e.g. "CROMPTON..." in "CROMPTON... LIMITED")
+            if clean_query in company_name.replace("LIMITED", "").strip():
                 return ticker
 
-    # 5. Fallback
+    # 4. Fallback (If cache is empty, just use the query)
+    # This prevents the "Startup Crash" by skipping the download.
     return clean_query
 
 

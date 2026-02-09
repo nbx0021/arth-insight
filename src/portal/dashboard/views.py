@@ -162,11 +162,10 @@ def refine_sector_name(yahoo_sector, yahoo_industry, ticker, description=""):
     sec = str(yahoo_sector).upper()
     ind = str(yahoo_industry).upper()
 
-    # --- 1. CLEAN THE TICKER (The Critical Fix) ---
-    # Remove .NS and .BO so "ITC.NS" becomes "ITC"
+    # --- 1. CLEAN THE TICKER ---
     sym = str(ticker).upper().replace(".NS", "").replace(".BO", "").strip()
 
-    # DEBUG: Print what the system sees
+    # DEBUG
     print(f"🕵️ SECTOR CHECK: Input='{ticker}' -> Cleaned='{sym}'")
 
     desc = str(description).upper() if description else ""
@@ -175,92 +174,106 @@ def refine_sector_name(yahoo_sector, yahoo_industry, ticker, description=""):
     # 2. GOD MODE: HARDCODED OVERRIDES (Highest Priority)
     # =========================================================
 
-    # FMCG (Force ITC here - MUST BE FIRST)
-    if sym in ["ITC", "HINDUNILVR", "NESTLEIND", "BRITANNIA", "DABUR", "GODREJCP", "MARICO", "VBL", "VARUN BEVERAGES"]:
+    # FMCG
+    if sym in ["ITC", "HINDUNILVR", "NESTLEIND", "BRITANNIA", "DABUR", "GODREJCP", "MARICO", "VBL", "VARUN BEVERAGES", "COLPAL"]:
         print(f"✅ God Mode Triggered: {sym} -> FMCG")
         return "FMCG"
+    
+    # AUTOMOBILE
+    if sym in ["MARUTI", "TATAMOTORS", "M&M", "ASHOKLEY", "HEROMOTOCO", "EICHERMOT", "BAJAJ-AUTO", "TVSMOTOR"]:
+        return "AUTOMOBILE"
 
-    # Oil & Gas (Reliance)
-    if sym in ["RELIANCE", "ONGC", "OIL", "IOC", "BPCL", "HPCL", "GAIL"]:
+    # NBFC (Added PFC, REC, IRFC here because they often get confused with Power/Railways)
+    if sym in ["SHRIRAMFIN", "BAJFINANCE", "BAJAJFINSV", "CHOLAFIN", "MUTHOOTFIN", "JIOFIN", "PFC", "REC", "IRFC", "M&MFIN"]:
+        return "NBFC" 
+
+    # PHARMA
+    if sym in ["SUNPHARMA", "DRREDDY", "CIPLA", "DIVISLAB", "LUPIN", "APOLLOHOSP", "TORNTPHARM", "ALKEM"]:
+        return "PHARMA"
+
+    # METALS & MINING (New)
+    if sym in ["TATASTEEL", "JSWSTEEL", "HINDALCO", "VEDL", "COALINDIA", "NMDC", "SAIL", "HINDZINC"]:
+        return "METALS"
+
+    # CEMENT (New)
+    if sym in ["ULTRACEMCO", "AMBUJACEM", "ACC", "SHREECEM", "DALBHARAT", "RAMCOCEM"]:
+        return "CEMENT"
+
+    # BANKING (Safety Net)
+    if sym in ["HDFCBANK", "ICICIBANK", "SBIN", "KOTAKBANK", "AXISBANK", "INDUSINDBK", "BANKBARODA", "PNB"]:
+        return "BANKING"
+
+    # Oil & Gas
+    if sym in ["RELIANCE", "ONGC", "OIL", "IOC", "BPCL", "HPCL", "GAIL", "IGL", "MGL"]:
         return "OIL & GAS"
 
-    # Aviation (Airlines)
-    if sym in ["INDIGO", "SPICEJET", "JETAIRWAYS", "GLOBALVECT"]:
+    # Aviation
+    if sym in ["INDIGO", "SPICEJET", "JETAIRWAYS"]:
         return "AVIATION"
 
     # Infrastructure & Logistics
-    if sym in ["ADANIPORTS", "GPPL", "JSWINFRA", "IRB", "GMRINFRA", "L&T", "LT"]:
+    if sym in ["ADANIPORTS", "GPPL", "JSWINFRA", "IRB", "GMRINFRA", "L&T", "LT", "RVNL", "IRCON"]:
         return "INFRASTRUCTURE"
 
     if sym in ["CONCOR", "VRL", "TCI", "BLUE DART", "BLUEDART"]:
         return "LOGISTICS"
 
     # Power & Renewables
-    if sym in ["SUZLON", "INOXWIND", "KPIGREEN", "ADANIGREEN", "TATAPOWER", "NTPC", "POWERGRID", "SJVN", "NHPC"]:
+    if sym in ["SUZLON", "INOXWIND", "KPIGREEN", "ADANIGREEN", "TATAPOWER", "NTPC", "POWERGRID", "SJVN", "NHPC", "ADANIPOWER"]:
         return "POWER & RENEWABLES"
 
     # Consumer Durables
-    if sym in ["BLUESTARCO", "VOLTAS", "WHIRLPOOL", "CROMPTON", "HAVELLS", "POLYCAB", "DIXON", "AMBER", "KAJARIA"]:
+    if sym in ["BLUESTARCO", "VOLTAS", "WHIRLPOOL", "CROMPTON", "HAVELLS", "POLYCAB", "DIXON", "AMBER", "KAJARIA", "KEI"]:
         return "CONSUMER DURABLES"
 
-    # Capital Goods / Engineering
-    if sym in ["HONAUT", "ABB", "SIEMENS", "THERMAX", "CUMMINSIND", "BHEL"]:
+    # Capital Goods
+    if sym in ["HONAUT", "ABB", "SIEMENS", "THERMAX", "CUMMINSIND", "BHEL", "BEL", "HAL"]:
         return "CAPITAL GOODS"
 
     # Consumer Tech
-    if sym in ["ZOMATO", "PAYTM", "NYKAA", "POLICYBZR", "DELHIVERY", "NAUKRI"]:
+    if sym in ["ZOMATO", "PAYTM", "NYKAA", "POLICYBZR", "DELHIVERY", "NAUKRI", "CARTRADE"]:
         return "CONSUMER TECH"
 
     # IT Services
-    if sym in ["INFY", "TCS", "WIPRO", "HCLTECH", "TECHM", "LTIM", "PERSISTENT", "COFORGE", "MPHASIS"]:
+    if sym in ["INFY", "TCS", "WIPRO", "HCLTECH", "TECHM", "LTIM", "PERSISTENT", "COFORGE", "MPHASIS", "KPITTECH"]:
         return "IT SERVICES"
 
     # =========================================================
     # 3. DYNAMIC SCANNING (Keyword Search)
     # =========================================================
 
-    # AVIATION (Check this FIRST to catch any new airlines)
-    if "AIRLINE" in desc or "AVIATION" in desc or "PASSENGER AIRCRAFT" in desc:
-        return "AVIATION"
-
-    # INFRASTRUCTURE
-    if "PORTS" in desc or "HIGHWAY" in desc or "TOLL" in desc or "CONSTRUCTION PROJECT" in desc or "EPC" in desc:
+    if "AIRLINE" in desc or "AVIATION" in desc: return "AVIATION"
+    if "CEMENT" in desc or "CONCRETE" in desc: return "CEMENT"
+    if "STEEL" in desc or "ALUMINUM" in desc or "COPPER" in desc or "MINING" in desc: return "METALS"
+    
+    # Infrastructure keywords
+    if "PORTS" in desc or "HIGHWAY" in desc or "TOLL" in desc or "EPC" in desc or "CONSTRUCTION PROJECT" in desc:
         return "INFRASTRUCTURE"
 
-    # LOGISTICS (Check this AFTER Aviation so "Air Cargo" doesn't trigger it)
     if "LOGISTICS" in desc or "CARGO" in desc or "FREIGHT" in desc or "WAREHOUS" in desc or "TRANSPORT" in desc:
         return "LOGISTICS"
 
-    # POWER
     if "WIND ENERGY" in desc or "SOLAR" in desc or "HYDRO" in desc or "THERMAL POWER" in desc:
         return "POWER & RENEWABLES"
 
-    # CONSUMER DURABLES
     if "AIR CONDITION" in desc or "REFRIGERATOR" in desc or "CABLES" in desc or "TILES" in desc:
         return "CONSUMER DURABLES"
 
-    # DEFENSE
     if "DEFENSE" in desc or "MISSILE" in desc or "NAVAL" in desc or "AEROSPACE" in desc:
         return "DEFENSE"
 
     # =========================================================
-    # 4. FALLBACK TO STANDARD MAPPINGS
+    # 4. FALLBACK
     # =========================================================
-    if "BANK" in ind:
-        return "BANKING"
-    if "TECHNOLOGY" in sec:
-        return "IT SERVICES"
-    if "PHARMA" in ind:
-        return "PHARMA"
-    if "AUTO" in ind:
-        return "AUTOMOBILE"
-    if "REAL ESTATE" in sec:
-        return "REALTY"
-    if "FMCG" in sec or "FOOD" in ind:
-        return "FMCG"
+    if "BANK" in ind: return "BANKING"
+    if "TECHNOLOGY" in sec: return "IT SERVICES"
+    if "PHARMA" in ind: return "PHARMA"
+    if "AUTO" in ind: return "AUTOMOBILE"
+    if "REAL ESTATE" in sec: return "REALTY"
+    if "FMCG" in sec or "FOOD" in ind: return "FMCG"
+    if "BASIC MATERIALS" in sec: return "METALS" # Good fallback for metals
 
     return sec
-
 
 def get_bq_client():
     BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -474,64 +487,55 @@ def get_robust_news(ticker_obj, symbol):
             print(f"Google News Error: {e}")
     return news_data
 
-# --- POLICY MAPPER (FIXED PATH LOGIC) ---
-
-
+# --- POLICY MAPPER ---
 def get_policy_context(sector_name, industry_name):
+    # 1. LOAD THE JSON FILE
+    policy_data = None
     try:
-        # Navigate from: src/portal/dashboard/views.py -> src/data/policy_context.json
-        # .parent = dashboard
-        # .parent.parent = portal
-        # .parent.parent.parent = src (Root of source code)
-        base_path = Path(__file__).resolve().parent.parent.parent
-        file_path = base_path / 'src' / 'data' / 'policy_context.json'
-
-        # Fallback if 'src' is not repeated in folder structure
+        # Robust path finding for Django/Render/Docker environments
+        base_dir = Path(__file__).resolve().parent.parent.parent # Goes up to 'src'
+        
+        # Try primary location
+        file_path = base_dir / 'data' / 'policy_context.json'
+        
+        # Try fallback location (if src is root)
         if not file_path.exists():
-            file_path = base_path / 'data' / 'policy_context.json'
+            file_path = base_dir / 'src' / 'data' / 'policy_context.json'
 
         with open(file_path, 'r') as f:
             policy_data = json.load(f)
-
+            
     except Exception as e:
-        print(f"Policy Load Error: {e} | Looking at: {file_path}")
+        print(f"⚠️ Policy File Error: {e}")
         return None
 
+    if not policy_data: 
+        return None
+
+    # 2. MAP SECTOR TO JSON KEY
     sec = str(sector_name).upper()
     ind = str(industry_name).upper()
-    target_key = None
+    target_key = "INFRASTRUCTURE" # Default fallback
 
-    # Enhanced Logic Mapper
-    if "TEXTILE" in sec or "APPAREL" in sec or "CLOTHING" in ind or "COTTON" in ind:
-        target_key = "TEXTILES"
-    elif "AGRI" in sec or "FARM" in ind or "FERTILIZER" in ind or "PESTICIDE" in ind:
-        target_key = "AGRICULTURE"
-    elif "RAIL" in ind or "WAGON" in ind:
-        target_key = "RAILWAYS"
-    elif "DEFENCE" in ind or "AEROSPACE" in ind or "SHIP" in ind:
-        target_key = "DEFENCE"
-    elif "CHEMICAL" in sec or "CHEMICAL" in ind:
-        target_key = "CHEMICALS"
-    elif "BANK" in sec or "BANK" in ind or "FINANCE" in ind:
-        target_key = "BANKING"
-    elif "AUTO" in sec or "AUTO" in ind or "VEHICLE" in ind:
-        target_key = "AUTO"
-    elif "TECHNOLOGY" in sec or "SOFTWARE" in ind or "IT SERVICES" in ind:
-        target_key = "IT"
-    elif "ENERGY" in sec or "OIL" in ind or "POWER" in ind or "UTILITIES" in sec:
-        target_key = "POWER"
-    elif "CONSTRUCTION" in sec or "REAL ESTATE" in ind or "INFRA" in ind or "CEMENT" in ind:
-        target_key = "INFRA"
-    elif "PHARMA" in sec or "DRUG" in ind or "BIOTECH" in ind:
-        target_key = "PHARMA"
-    elif "CONSUMER" in sec or "FMCG" in ind or "FOOD" in ind:
-        target_key = "FMCG"
-    elif "REAL ESTATE" in sec or "REIT" in ind:
-        target_key = "REALTY"
-    elif "NBFC" in ind or "CAPITAL" in ind:
-        target_key = "NBFC"
+    # Exact mappings to matches your JSON keys
+    if "TEXTILE" in sec or "APPAREL" in ind: target_key = "TEXTILES"
+    elif "AGRI" in sec or "FARM" in ind: target_key = "AGRICULTURE"
+    elif "RAIL" in ind: target_key = "RAILWAYS"
+    elif "DEFENCE" in ind or "AEROSPACE" in ind: target_key = "DEFENCE"
+    elif "CHEM" in sec or "CHEM" in ind: target_key = "CHEMICALS"
+    elif "AUTO" in sec or "VEHICLE" in ind: target_key = "AUTO"
+    elif "BANK" in sec: target_key = "BANKING"
+    elif "IT" in sec or "TECH" in sec: target_key = "IT"
+    elif "PHARMA" in sec or "DRUG" in ind: target_key = "PHARMA"
+    elif "FMCG" in sec or "FOOD" in ind: target_key = "FMCG"
+    elif "POWER" in sec or "ENERGY" in sec or "WIND" in ind or "SOLAR" in ind: target_key = "POWER"
+    elif "REAL" in sec or "REIT" in ind: target_key = "REALTY"
+    elif "NBFC" in sec or "FINANCE" in sec: target_key = "NBFC"
+    # Catch-all for Infra
+    elif "INFRA" in sec or "CONSTRUCT" in ind or "PORT" in ind or "ROAD" in ind: target_key = "INFRASTRUCTURE"
 
-    if target_key and target_key in policy_data['sectors']:
+    # 3. RETURN DATA
+    if target_key in policy_data['sectors']:
         return {
             'sector_name': target_key,
             'repo_rate': policy_data.get('repo_rate', 'N/A'),
@@ -539,6 +543,7 @@ def get_policy_context(sector_name, industry_name):
             'dates': policy_data.get('dates', {}),
             'insights': policy_data['sectors'][target_key]
         }
+    
     return None
 
 # ==========================================
@@ -578,127 +583,110 @@ def analyze_financial_health(ticker_obj):
 
 
 # --- SCORING ENGINE FUNCTION ---
-def calculate_arth_score(financials, technicals, policy, news_list):
+# ==========================================
+# REPLACE YOUR EXISTING calculate_arth_score WITH THIS
+# ==========================================
+def calculate_arth_score(financials, technicals, policy, news_list, sector):
     """
     The Brain: Calculates a 0-100 Health Score & Recommendation.
-    Weights: Financials (40%), Technicals (30%), Macro (20%), Sentiment (10%)
     """
     score = 0
-    reasons = []
-
+    
     # 1. FINANCIALS (Max 40 Points)
-    # ROE > 15% (+15), Profit Growth > 10% (+15), Low Debt (+10)
-    if financials.get('roe', 0) > 15:
-        score += 15
-    if financials.get('profit_growth', 0) > 10:
-        score += 15
-    if financials.get('debt_to_equity', 0) < 1.0:
-        score += 10
+    roe = financials.get('roe', 0)
+    profit_growth = financials.get('profit_growth', 0)
+    debt_equity = financials.get('debt_to_equity', 0)
+
+    # ROE (Return on Equity)
+    if roe > 20: score += 15
+    elif roe > 15: score += 10
+    elif roe > 10: score += 5
+
+    # Profit Growth
+    if profit_growth > 20: score += 15
+    elif profit_growth > 10: score += 10
+    elif profit_growth > 0: score += 5
+
+    # Debt Logic (SMART FIX FOR BANKS/POWER)
+    # Banks & Power Cos (like Suzlon) have high debt naturally.
+    # We ignore debt penalty if ROE is good.
+    if "BANK" in sector or "FINANCE" in sector or "POWER" in sector or "INFRA" in sector:
+        if roe > 10: score += 10
     else:
-        reasons.append("High Debt Levels")
+        # Normal Companies: Penalize High Debt
+        if debt_equity < 0.5: score += 10
+        elif debt_equity < 1.0: score += 5
 
     # 2. TECHNICALS (Max 30 Points)
-    # RSI not overbought/sold (+10), Bullish Trend (+20)
     if technicals:
-        rsi = technicals['rsi']['val']
-        if 35 < rsi < 70:
-            score += 10
-
-        trend = technicals['trend']['status']
-        if "Bullish" in trend:
-            score += 20
-        elif "Bearish" in trend:
-            score -= 5  # Penalty
+        rsi = technicals.get('rsi', {}).get('val', 50)
+        if 35 < rsi < 70: score += 10
+        
+        trend = technicals.get('trend', {}).get('status', '')
+        if "Bullish" in trend: score += 20
+        elif "Bearish" in trend: score -= 5
+        else: score += 5
 
     # 3. MACRO / POLICY (Max 20 Points)
-    # NLP on Budget Stance
     if policy and 'insights' in policy:
-        budget_text = policy['insights'].get('budget', '').lower()
-        if "positive" in budget_text or "growth" in budget_text or "incentive" in budget_text:
-            score += 20
-        elif "neutral" in budget_text:
-            score += 10
+        budget = policy['insights'].get('budget', '').lower()
+        if "positive" in budget: score += 20
+        elif "neutral" in budget: score += 10
 
     # 4. NEWS SENTIMENT (Max 10 Points)
-    # Analyze last 5 headlines
-    sentiment_score = 0
+    sentiment = 0
     if news_list:
         for n in news_list:
             blob = TextBlob(n['title'])
-            sentiment_score += blob.sentiment.polarity  # Returns -1 to 1
+            sentiment += blob.sentiment.polarity
+        
+        if sentiment > 0.1: score += 10
+        elif sentiment < -0.1: score -= 5
 
-        # If avg sentiment is positive
-        if sentiment_score > 0:
-            score += 10
-        elif sentiment_score < -0.5:
-            score -= 5  # Penalty for bad news
+    # Final Verdict
+    if score >= 80: verdict = "STRONG BUY"
+    elif score >= 60: verdict = "BUY"
+    elif score >= 40: verdict = "HOLD"
+    else: verdict = "AVOID"
 
-    # 5. FINAL VERDICT
-    if score >= 80:
-        verdict = "STRONG BUY"
-    elif score >= 60:
-        verdict = "BUY"
-    elif score >= 40:
-        verdict = "HOLD"
-    else:
-        verdict = "SELL / AVOID"
+    color = 'text-success' if score >= 60 else 'text-danger' if score < 40 else 'text-warning'
 
-    return {
-        'score': score,
-        'verdict': verdict,
-        'color': 'text-success' if score >= 60 else 'text-danger' if score < 40 else 'text-warning'
-    }
-
+    return {'score': score, 'verdict': verdict, 'color': color}
 
 def calculate_narendra_rating(data):
     ratings = {}
     thresh = RATING_THRESHOLDS
-    prom = data.get('promoter_holding', 0)
-    if prom > thresh['PROMOTER_GOOD']:
-        ratings['ownership'] = {
-            "metric": f"{prom}%", "benchmark": f"> {thresh['PROMOTER_GOOD']}%", "status": "High", "color": "text-success"}
-    elif prom > thresh['PROMOTER_AVG']:
-        ratings['ownership'] = {
-            "metric": f"{prom}%", "benchmark": f"> {thresh['PROMOTER_AVG']}%", "status": "Stable", "color": "text-primary"}
+    
+    # ... (Keep existing Logic) ...
+    # FIX: Handle 0% ROE
+    roe = data.get('roe', 0)
+    if roe == 0:
+        ratings['efficiency'] = {"metric": "N/A", "benchmark": "-", "status": "No Data", "color": "text-muted"}
+    elif roe > thresh['ROE_GOOD']:
+        ratings['efficiency'] = {"metric": f"{roe}%", "benchmark": f"> {thresh['ROE_GOOD']}%", "status": "Excellent", "color": "text-success"}
+    elif roe > thresh['ROE_AVG']:
+        ratings['efficiency'] = {"metric": f"{roe}%", "benchmark": f"> {thresh['ROE_AVG']}%", "status": "Average", "color": "text-warning"}
     else:
-        ratings['ownership'] = {
-            "metric": f"{prom}%", "benchmark": f"> {thresh['PROMOTER_AVG']}%", "status": "Low", "color": "text-danger"}
+        ratings['efficiency'] = {"metric": f"{roe}%", "benchmark": f"> {thresh['ROE_AVG']}%", "status": "Poor", "color": "text-danger"}
 
+    # Ownership
+    prom = data.get('promoter_holding', 0)
+    if prom > 50: ratings['ownership'] = {"metric": f"{prom}%", "benchmark": "> 50%", "status": "High", "color": "text-success"}
+    else: ratings['ownership'] = {"metric": f"{prom}%", "benchmark": "> 30%", "status": "Stable", "color": "text-primary"}
+
+    # Valuation
     pe = data.get('pe_ratio', 0)
     ind_pe = data.get('industry_pe', 25)
-    if pe > 0 and pe < ind_pe:
-        ratings['valuation'] = {
-            "metric": f"{pe}x", "benchmark": f"{ind_pe}x", "status": "Cheap", "color": "text-success"}
-    elif pe < (ind_pe * thresh['VALUATION_FAIR_BUFFER']):
-        ratings['valuation'] = {
-            "metric": f"{pe}x", "benchmark": f"{ind_pe}x", "status": "Fair", "color": "text-primary"}
-    else:
-        ratings['valuation'] = {
-            "metric": f"{pe}x", "benchmark": f"{ind_pe}x", "status": "Expensive", "color": "text-danger"}
+    if pe < ind_pe: ratings['valuation'] = {"metric": f"{pe}x", "benchmark": f"{ind_pe}x", "status": "Cheap", "color": "text-success"}
+    else: ratings['valuation'] = {"metric": f"{pe}x", "benchmark": f"{ind_pe}x", "status": "Expensive", "color": "text-danger"}
 
-    roe = data.get('roe', 0)
-    if roe > thresh['ROE_GOOD']:
-        ratings['efficiency'] = {
-            "metric": f"{roe}%", "benchmark": f"> {thresh['ROE_GOOD']}%", "status": "Excellent", "color": "text-success"}
-    elif roe > thresh['ROE_AVG']:
-        ratings['efficiency'] = {
-            "metric": f"{roe}%", "benchmark": f"> {thresh['ROE_AVG']}%", "status": "Average", "color": "text-warning"}
-    else:
-        ratings['efficiency'] = {
-            "metric": f"{roe}%", "benchmark": f"> {thresh['ROE_AVG']}%", "status": "Poor", "color": "text-danger"}
-
+    # Financials
     de = data.get('debt_to_equity', 0)
-    if de < thresh['DEBT_SAFE']:
-        ratings['financials'] = {
-            "metric": f"D/E {de}", "benchmark": f"< {thresh['DEBT_SAFE']}", "status": "Debt Free", "color": "text-success"}
-    elif de < thresh['DEBT_RISKY']:
-        ratings['financials'] = {
-            "metric": f"D/E {de}", "benchmark": f"< {thresh['DEBT_RISKY']}", "status": "Stable", "color": "text-primary"}
-    else:
-        ratings['financials'] = {
-            "metric": f"D/E {de}", "benchmark": f"< {thresh['DEBT_RISKY']}", "status": "High Debt", "color": "text-danger"}
-    return ratings
+    if de < 0.1: ratings['financials'] = {"metric": f"D/E {de}", "benchmark": "< 0.1", "status": "Debt Free", "color": "text-success"}
+    elif de < 1.0: ratings['financials'] = {"metric": f"D/E {de}", "benchmark": "< 1.0", "status": "Stable", "color": "text-primary"}
+    else: ratings['financials'] = {"metric": f"D/E {de}", "benchmark": "< 1.0", "status": "High Debt", "color": "text-danger"}
 
+    return ratings
 
 def calculate_wealth_growth(ticker_obj, investment_amount, start_year):
     try:
@@ -946,20 +934,21 @@ def get_detailed_financials(ticker_obj):
 
 
 def get_peer_data_with_share(ticker, sector, current_mcap):
-    # 1. Resolve Table Path
     client = get_bq_client()
     dataset_id = os.getenv("GCP_DATASET_ID")
     table_id = f"{client.project}.{dataset_id}.stock_intelligence_v3"
 
+    # 1. Get Peers List
     peers_list = get_dynamic_peers(ticker, sector)
     
+    # 2. Safety Check: If no peers found, return empty immediately
     if not peers_list:
-        return []
+        return [], 100
 
-    # 2. Get UNIQUE tickers currently assigned to this sector
-    # We use ROW_NUMBER to only look at the MOST RECENT record for every stock.
-    # This prevents ITC (now FMCG) from appearing in INFRASTRUCTURE results.
+    # 3. OPTIMIZED: Fetch Data from BigQuery (Do NOT loop Yahoo!)
     try:
+        # We select specific columns so we don't need to live fetch
+        # The subquery ensures we only get the latest row for each ticker
         sql = f"""
             SELECT ticker, price, mcap, pe_ratio, roe
             FROM (
@@ -969,66 +958,41 @@ def get_peer_data_with_share(ticker, sector, current_mcap):
                 WHERE ticker IN UNNEST({peers_list})
             )
             WHERE rn = 1
-            """
+        """
         df = client.query(sql).to_dataframe()
-        peers_list = df['ticker'].tolist()
+        
+        # Convert to dictionary directly
+        peer_data = []
+        total_sector_mcap = current_mcap
+
+        for index, row in df.iterrows():
+            # Data in BQ is already in Crores (saved by sync_stock_on_demand)
+            m_cap = safe_float(row['mcap'])
+            
+            if m_cap > 0:
+                total_sector_mcap += m_cap
+                peer_data.append({
+                    'ticker': row['ticker'],
+                    'price': round(safe_float(row['price']), 2),
+                    'mcap': m_cap,
+                    'pe': round(safe_float(row['pe_ratio']), 1),
+                    'roe': round(safe_float(row['roe']), 1),
+                    'share': 0 # Placeholder, calculated below
+                })
+
+        # 4. Calculate Market Share percentages
+        for p in peer_data:
+            p['share'] = round((p['mcap'] / total_sector_mcap) * 100, 1) if total_sector_mcap > 0 else 0
+            
+        current_share = round((current_mcap / total_sector_mcap) * 100, 1) if total_sector_mcap > 0 else 100
+
+        # Return sorted by Market Cap (Largest first)
+        return sorted(peer_data, key=lambda x: x['mcap'], reverse=True), current_share
+        
     except Exception as e:
         print(f"⚠️ Peer SQL Error: {e}")
-
-    # Fallback if DB is empty or query fails
-    if not peers_list:
-        if "TECH" in sector:
-            peers_list = ["TCS", "INFY", "HCLTECH"]
-        elif "BANK" in sector:
-            peers_list = ["HDFCBANK", "ICICIBANK", "SBIN"]
-        elif "FMCG" in sector:
-            peers_list = ["HINDUNILVR", "NESTLEIND", "DABUR"]
-        else:
-            peers_list = []
-
-    peer_data = []
-    total_sector_mcap = current_mcap
-
-    # 3. Fetch Live Data for the Peers
-    for p in peers_list:
-        try:
-            if not p or len(p) < 2:
-                continue
-
-            # Handle suffix logic
-            ticker_suffix = p if (".NS" in p or ".BO" in p) else f"{p}.NS"
-            p_obj = yf.Ticker(ticker_suffix)
-            p_info = p_obj.info
-
-            if not p_info or 'currentPrice' not in p_info:
-                continue
-
-            mcap = to_crores(p_info.get('marketCap', 0))
-
-            if mcap > 0:
-                total_sector_mcap += mcap
-                peer_data.append({
-                    'ticker': p,
-                    'name': p_info.get('shortName', p),
-                    'price': p_info.get('currentPrice', 0),
-                    'mcap': mcap,
-                    'pe': round(safe_float(p_info.get('trailingPE') or p_info.get('forwardPE') or 0), 1),
-                    'roe': round(safe_float(p_info.get('returnOnEquity') or 0) * 100, 1)
-                })
-        except Exception:
-            continue
-
-    # 4. Calculate Market Share percentages
-    for p in peer_data:
-        p['share'] = round((p['mcap'] / total_sector_mcap)
-                           * 100, 1) if total_sector_mcap > 0 else 0
-
-    current_share = round((current_mcap / total_sector_mcap)
-                          * 100, 1) if total_sector_mcap > 0 else 100
-
-    # Return sorted by Market Cap
-    return sorted(peer_data, key=lambda x: x['mcap'], reverse=True), current_share
-
+        # Return empty list on error to prevent crash
+        return [], 100
 
 def get_dynamic_peers(ticker, sector):
     # 🛑 SAFETY GUARD: Stop if running during server startup
@@ -1242,6 +1206,7 @@ def sync_stock_on_demand(query):
                     # 60 Minute Rule
                     now_utc = datetime.now(pytz.UTC)
                     is_fresh = (now_utc - last_upd).total_seconds() < 3600
+                    # is_fresh = (now_utc - last_upd).total_seconds() < 0
                 except:
                     is_fresh = False
 
@@ -1306,14 +1271,36 @@ def sync_stock_on_demand(query):
         if not stock_info or 'currentPrice' not in stock_info:
             return None
 
-        # ... (Rest of your existing Live Fetch logic matches perfectly) ...
+   
         hist = ticker_obj.history(period="5y")
         
-        # Calculations
-        pe_val = stock_info.get('trailingPE') or stock_info.get('forwardPE') or 0
+        # =========================================================
+        # 🛡️ SMART METRIC CALCULATION (Prevents 0.0 scores)
+        # =========================================================
+        
+        # 1. PE Ratio (Try Trailing, then Forward)
+        pe_val = safe_float(stock_info.get('trailingPE') or stock_info.get('forwardPE') or 0)
+        
+        # 2. ROE (If missing, estimate from Price/Book and PE)
         roe = round(safe_float(stock_info.get('returnOnEquity')) * 100, 2)
+        if roe == 0 and pe_val > 0:
+            # Fallback: ROE ≈ (P/B) / (P/E)
+            pb = safe_float(stock_info.get('priceToBook'))
+            if pb > 0:
+                roe = round((pb / pe_val) * 100, 2)
+                print(f"⚠️ {symbol}: ROE missing. Estimated {roe}% from P/B & P/E.")
+
+        # 3. Growth (If missing, default to a safe positive number if PE is high)
+        earnings_growth = safe_float(stock_info.get('earningsGrowth'))
+        revenue_growth = safe_float(stock_info.get('revenueGrowth'))
+        
+        # Use Revenue Growth if Earnings Growth is missing
+        profit_growth = round((earnings_growth or revenue_growth or 0) * 100, 2)
+        
+        # 4. Debt (Standard)
         raw_de = safe_float(stock_info.get('debtToEquity'))
         debt_to_equity = round(raw_de / 100, 2) if raw_de > 5 else round(raw_de, 2)
+
         
         refined_sector = refine_sector_name(
             stock_info.get('sector', 'Unknown'),
@@ -1322,7 +1309,23 @@ def sync_stock_on_demand(query):
             stock_info.get('longBusinessSummary', '')
         )
 
-        # Build FRESH Payload
+        # =========================================================
+        # REPLACEMENT BLOCK FOR data_payload
+        # =========================================================
+        
+        # 1. Pre-calculate metrics
+        tech_data = calculate_technicals(hist)
+        news_data = get_robust_news(ticker_obj, symbol)
+        policy_data = get_policy_context(refined_sector, stock_info.get('industry', ''))
+
+        # Pack Metrics for Scoring
+        fin_metrics = {
+            'roe': roe, 
+            'profit_growth': profit_growth,
+            'debt_to_equity': debt_to_equity
+        } 
+
+        # --- BUILD PAYLOAD ---
         data_payload = {
             'ticker': symbol,
             'company_name': str(stock_info.get('longName', symbol)),
@@ -1341,26 +1344,30 @@ def sync_stock_on_demand(query):
             'debt': to_crores(stock_info.get('totalDebt')),
             'promoter_holding': round(safe_float(stock_info.get('heldPercentInsiders')) * 100, 2),
             'roe': roe,
-            'profit_growth': round(safe_float(stock_info.get('earningsGrowth')) * 100, 2),
+            'profit_growth': fin_metrics['profit_growth'],
             'pe_ratio': round(safe_float(pe_val), 2),
             'industry_pe': get_industry_pe(refined_sector, symbol, FALLBACK_SECTOR_PE.get(refined_sector, 20.0)),
             'debt_to_equity': debt_to_equity,
-            'cagr_5y': 0, # Simplify for brevity, logic exists in your code
-            'technicals': calculate_technicals(hist),
-            'news': get_robust_news(ticker_obj, symbol),
-            'policy': get_policy_context(refined_sector, ""),
-            'arth_score': calculate_arth_score({}, {}, {}, []),
+            'cagr_5y': 0, 
+
+            # ✅ THIS IS THE CRITICAL FIX: Pass Real Data
+            'technicals': tech_data,
+            'news': news_data,
+            'policy': policy_data,
+            'arth_score': calculate_arth_score(fin_metrics, tech_data, policy_data, news_data, refined_sector),
+            
             'shareholding': get_safe_shareholding(ticker_obj, stock_info),
             'last_updated': datetime.now(pytz.timezone('Asia/Kolkata')),
             'is_stale': False
         }
-        
+
         # CAGR Fix
         if not hist.empty:
             start_p = hist['Close'].iloc[0]
             end_p = hist['Close'].iloc[-1]
             if start_p > 0:
                 data_payload['cagr_5y'] = round(((end_p / start_p) ** (1 / 5) - 1) * 100, 2)
+                
             data_payload['chart_dates'] = hist.index.strftime('%Y-%m-%d').tolist()
             data_payload['chart_prices'] = hist['Close'].round(2).tolist()
             data_payload['chart_volumes'] = hist['Volume'].fillna(0).tolist()
@@ -1435,7 +1442,7 @@ def index(request):
     # --- EVERYTHING BELOW RUNS ONLY WHEN SEARCHING ---
     wealth_amount = int(request.GET.get('w_amt', 100000))
     wealth_year = int(request.GET.get('w_year', 2011))
-    
+
     # 2. Fetch Main Data
     data = sync_stock_on_demand(raw_query)
 

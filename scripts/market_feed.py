@@ -69,7 +69,7 @@ def get_comprehensive_tickers():
             
             # --- MAJOR BANKS & FINANCE ---
             "KOTAKBANK", "AXISBANK", "BAJFINANCE", "BAJAJFINSV", 
-            "HDFCLIFE", "SBILIFE", "INDUSINDBK", "BANKBARODA", "PNB",
+            "HDFCLIFE", "SBILIFE", "INDUSINDBK", "BANKBARODA", "PNB","SHRIRAMFIN",
             
             # --- TECH & IT SERVICES ---
             "HCLTECH", "WIPRO", "TECHM", "LTIM", "PERSISTENT",
@@ -83,7 +83,7 @@ def get_comprehensive_tickers():
             "ADANIGREEN", "ADANIPOWER", "TATA_POWER", "BPCL", "IOC",
             
             # --- CONGLOMERATES & INFRA ---
-            "LT", "ADANIENT", "ADANIPORTS", "ULTRACEMCO", "GRASIM", "AMBUJACEM",
+            "LT", "ADANIENT", "ADANIPORTS", "ULTRACEMCO", "GRASIM", "AMBUJACEM","SUZLON",
             
             # --- METALS & COMMODITIES ---
             "TATASTEEL", "HINDALCO", "JSWSTEEL", "VEDL",
@@ -93,7 +93,8 @@ def get_comprehensive_tickers():
             
             # --- CONSUMER & RETAIL ---
             "TITAN", "ASIANPAINT", "NESTLEIND", "BRITANNIA", 
-            "TATACONSUM", "ZOMATO", "TRENT", "DMART"
+            "TATACONSUM", "ZOMATO", "TRENT", "DMART",
+             
         ]
             
         for extra in important_extras:

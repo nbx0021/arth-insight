@@ -607,58 +607,58 @@ def get_detailed_financials(ticker_obj):
 
 def get_peer_data_with_share(ticker, sector, current_mcap):
     client = get_bq_client()
-    dataset_id = os.getenv("GCP_DATASET_ID")
-    # Using Raw table for peer lookup is fine as it has all stocks
-    table_id = f"{client.project}.{dataset_id}.stock_intelligence_v3"
+    # 🟢 FIX 3: Point directly to the Gold View instead of the raw table
+    table_id = f"{client.project}.prod.fact_stock_analysis"
 
     peers_list = get_dynamic_peers(ticker, sector)
     if not peers_list: return [], 100
 
     try:
+        # 🟢 FIX 4: Simplified query
         sql = f"""
-            SELECT ticker, price, mcap, pe_ratio, roe
-            FROM (
-                SELECT ticker, price, mcap, pe_ratio, roe,
-                ROW_NUMBER() OVER(PARTITION BY ticker ORDER BY last_updated DESC) as rn
-                FROM `{table_id}`
-                WHERE ticker IN UNNEST({peers_list})
-            )
-            WHERE rn = 1
+        SELECT ticker, price, mcap, pe_ratio, roe
+        FROM `{table_id}`
+        WHERE ticker IN UNNEST({peers_list})
         """
         df = client.query(sql).to_dataframe()
         peer_data = []
         total_sector_mcap = current_mcap
+        
         for index, row in df.iterrows():
             m_cap = safe_float(row['mcap'])
             if m_cap > 0:
                 total_sector_mcap += m_cap
                 peer_data.append({'ticker': row['ticker'], 'price': round(safe_float(row['price']), 2), 'mcap': m_cap, 'pe': round(safe_float(row['pe_ratio']), 1), 'roe': round(safe_float(row['roe']), 1), 'share': 0})
+        
         for p in peer_data:
             p['share'] = round((p['mcap'] / total_sector_mcap) * 100, 1) if total_sector_mcap > 0 else 0
+            
         current_share = round((current_mcap / total_sector_mcap) * 100, 1) if total_sector_mcap > 0 else 100
         return sorted(peer_data, key=lambda x: x['mcap'], reverse=True), current_share
-    except: return [], 100
+    except Exception as e: 
+        print(f"⚠️ Peer data error: {e}")
+        return [], 100
 
 def get_dynamic_peers(ticker, sector):
-    if 'gunicorn' in sys.argv[0] or 'runserver' in sys.argv[0]: pass
     client = get_bq_client()
-    dataset_id = os.getenv("GCP_DATASET_ID")
-    # Point this to your Gold table as well
+    # 🟢 FIX 1: Point directly to the clean Gold View
     table_id = f"{client.project}.prod.fact_stock_analysis"
-    # table_id = f"{client.project}.{dataset_id}.stock_intelligence_v3"
+    
     try:
+        # 🟢 FIX 2: Removed ROW_NUMBER since the View already handles duplicates perfectly
         query = f"""
-        SELECT ticker FROM (
-            SELECT ticker, mcap, last_updated,
-            ROW_NUMBER() OVER(PARTITION BY ticker ORDER BY last_updated DESC) as rn
-            FROM `{table_id}` WHERE sector = '{sector}'
-        )
-        WHERE rn = 1 AND ticker != '{ticker}' AND last_updated >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
+        SELECT ticker 
+        FROM `{table_id}` 
+        WHERE sector = '{sector}' 
+          AND ticker != '{ticker}' 
+          AND last_updated >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
         ORDER BY mcap DESC LIMIT 5
         """
         results = client.query(query).result()
         return [row.ticker for row in results]
-    except: return []
+    except Exception as e: 
+        print(f"⚠️ Peer fetch error: {e}")
+        return []
 
 def get_safe_shareholding(ticker_obj, stock_info):
     if isinstance(stock_info, dict): pass

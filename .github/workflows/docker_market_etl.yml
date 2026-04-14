@@ -1,8 +1,52 @@
+# name: Docker Market Data ETL
+
+# on:
+#   schedule:
+#     - cron: '30 3,5,6,8,9,10 * * 1-5'
+#   workflow_dispatch: 
+
+# jobs:
+#   run-etl-container:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v2
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+#       - name: Run Market Feed
+#         env:
+#           GCP_DATASET_ID: ${{ secrets.GCP_DATASET_ID }}
+#           GCP_SERVICE_JSON: ${{ secrets.GCP_SERVICE_JSON }}
+#           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+#         run: |
+#           echo "$GCP_SERVICE_JSON" > service-account.json
+          
+#           # We pull the image you just built 43 minutes ago
+#           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest
+          
+#           docker run \
+#             -v $(pwd)/service-account.json:/app/service-account.json \
+#             -e GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json \
+#             -e GCP_DATASET_ID=$GCP_DATASET_ID \
+#             -e DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY \
+#             ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest \
+#             python scripts/market_feed.py force
+
+
+
+
+
 name: Docker Market Data ETL
 
 on:
   schedule:
-    - cron: '30 3,5,6,8,9,10 * * 1-5'
+    # Runs at 11:17 AM UTC (4:47 PM IST) Monday-Friday
+    - cron: '17 11 * * 1-5'
   workflow_dispatch: 
 
 jobs:
@@ -26,13 +70,13 @@ jobs:
         run: |
           echo "$GCP_SERVICE_JSON" > service-account.json
           
-          # We pull the image you just built 43 minutes ago
           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest
           
+          # 🟢 FIX: Removed the word 'force' at the very end so it respects holidays
           docker run \
             -v $(pwd)/service-account.json:/app/service-account.json \
             -e GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json \
             -e GCP_DATASET_ID=$GCP_DATASET_ID \
             -e DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY \
             ${{ secrets.DOCKERHUB_USERNAME }}/arth-insight:latest \
-            python scripts/market_feed.py force
+            python scripts/market_feed.py

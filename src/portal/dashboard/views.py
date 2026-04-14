@@ -744,7 +744,8 @@ def is_market_open():
 # ==========================================
 # 6. SYNC & MAIN CONTROLLER
 # ==========================================
-def sync_stock_on_demand(query):
+# def sync_stock_on_demand(query):
+def sync_stock_on_demand(query, bulk_mode=False):
     # --- STEP 1: RESOLVE SYMBOL ---
     try: symbol = resolve_symbol_from_name(query)
     except: symbol = query.upper().replace(".", "").replace("LTD", "").strip()
@@ -963,7 +964,7 @@ def sync_stock_on_demand(query):
         # =========================================================
         cache.set(cache_key, data_payload, timeout=60*15)
 
-        if client:
+        if client and not bulk_mode:
             try:
                 # 🚀 WRITE PATH FIX: Explicitly write to Raw Table
                 dataset_id = os.getenv("GCP_DATASET_ID")

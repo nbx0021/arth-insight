@@ -186,18 +186,34 @@ except ImportError as e:
     print(f"❌ CRITICAL IMPORT ERROR: {e}")
     sys.exit(1)
 
-def is_market_open():
-    """Checks if the NSE market is currently open."""
+# def is_market_open():
+#     """Checks if the NSE market is currently open."""
+#     tz = pytz.timezone('Asia/Kolkata')
+#     now = datetime.now(tz)
+#     if now.weekday() >= 5: return False
+#     market_start, market_end = time(9, 0), time(16, 0)
+#     if not (market_start <= now.time() <= market_end): return False
+#     try:
+#         schedule = mcal.get_calendar('NSE').schedule(start_date=now.date(), end_date=now.date())
+#         return not schedule.empty
+#     except:
+#         return True # Fallback to open if calendar service fails
+
+def is_trading_day():
+    """Checks if today is a valid NSE trading day (ignores time of day)."""
     tz = pytz.timezone('Asia/Kolkata')
     now = datetime.now(tz)
-    if now.weekday() >= 5: return False
-    market_start, market_end = time(9, 0), time(16, 0)
-    if not (market_start <= now.time() <= market_end): return False
+    
+    # 1. Skip Weekends (Saturday=5, Sunday=6)
+    if now.weekday() >= 5: 
+        return False 
+        
+    # 2. Skip Public Holidays using the NSE Calendar
     try:
         schedule = mcal.get_calendar('NSE').schedule(start_date=now.date(), end_date=now.date())
         return not schedule.empty
     except:
-        return True # Fallback to open if calendar service fails
+        return True # Fallback to True if the calendar API fails
 
 def get_comprehensive_tickers():
     """Fetches top 250+ tickers to ensure sector diversity."""
@@ -256,7 +272,7 @@ def run_etl():
     # 1. Market Check
     if len(sys.argv) > 1 and sys.argv[1] == 'force':
         print("💪 Force Mode Activated.")
-    elif not is_market_open():
+    elif not is_trading_day():
         print("⏰ Market is closed. Execution skipped.")
         return
 

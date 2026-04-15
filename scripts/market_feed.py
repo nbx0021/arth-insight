@@ -163,6 +163,8 @@ from io import StringIO
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 from google.cloud import bigquery
+import time
+import random
 
 # --- 1. DEFINE PATHS ---
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -254,11 +256,25 @@ def get_comprehensive_tickers():
         print(f"⚠️ Ticker Fetch Failed: {e}. Using Fallback.")
         return ["RELIANCE", "TCS", "HDFCBANK", "ICICIBANK", "INFY", "ITC", "SBIN", "LT", "HINDUNILVR"]
 
+# def sync_wrapper(symbol, index, total):
+#     """Wrapper to handle individual stock sync inside the thread pool."""
+#     try:
+#         print(f"🔄 [{index}/{total}] Processing {symbol}...")
+#         # 🟢 FIX: Pass bulk_mode=True so it fetches but DOES NOT save individually
+#         data = sync_stock_on_demand(symbol, bulk_mode=True)
+#         if data:
+#             return data, f"✅ {symbol} fetched."
+#         return None, f"⚠️ {symbol} returned empty."
+#     except Exception as e:
+#         return None, f"❌ Error {symbol}: {str(e)}"
+
 def sync_wrapper(symbol, index, total):
     """Wrapper to handle individual stock sync inside the thread pool."""
     try:
+        # 🟢 THE FIX: Wait between 0.5 and 2 seconds before fetching
+        time.sleep(random.uniform(0.5, 2.0))
+        
         print(f"🔄 [{index}/{total}] Processing {symbol}...")
-        # 🟢 FIX: Pass bulk_mode=True so it fetches but DOES NOT save individually
         data = sync_stock_on_demand(symbol, bulk_mode=True)
         if data:
             return data, f"✅ {symbol} fetched."
@@ -285,9 +301,13 @@ def run_etl():
 
     # 3. Parallel Execution (Threading)
     print(f"⚡ Starting Parallel Sync with 10 workers...")
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    # with ThreadPoolExecutor(max_workers=10) as executor:
+    #     futures = [executor.submit(sync_wrapper, symbol, i+1, total) for i, symbol in enumerate(tickers)]
+    # 🟢 THE FIX: Slow down the workers from 10 to 3
+    print(f"⚡ Starting Parallel Sync with 3 workers (Stealth Mode)...")
+    with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(sync_wrapper, symbol, i+1, total) for i, symbol in enumerate(tickers)]
-        
+
         for future in as_completed(futures):
             data, msg = future.result()
             print(msg)
